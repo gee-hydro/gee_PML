@@ -5,17 +5,19 @@ var MOD16A2_105 = ee.ImageCollection("MODIS/NTSG/MOD16A2/105"),
     pml_v1_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly"),
     pml_v2_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly"),
     ImgCol_land = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/MCD12Q1_006"),
-    MOD16A2_006 = ee.ImageCollection("MODIS/006/MOD16A2");
+    MOD16A2_006 = ee.ImageCollection("MODIS/006/MOD16A2"),
+    pml_v2_yearly2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/TEMP/PML_V2_yearly"),
+    pml_v1_yearly2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/TEMP/PML_V1_yearly");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var imgcol_year, bands, folder, prefix, years,  
-    V2 = false;
+    V2 = true;
     
 if (V2){
     imgcol_year = pml_v2_yearly;
     bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
     folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly'; //
     prefix = 'PMLV2_IGBP_mean_';
-    years  = [2003, 2005, 2007, 2012, 2013, 2017]; 
+    years  = [2013, 2017]; 
 } else{
     imgcol_year = pml_v1_yearly;
     bands  = ['ET'];//['Ec', 'Ei', 'Es', 'ET_water'];
@@ -92,9 +94,9 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
     ////////////////////////////////////////////////////////////////////////////
     // print(imgcol, 'imgcol_check');
     
-    for (var i in years){
-        var year = years[i];
-    // for (var year = year_begin; year <= year_end; year++){
+    // for (var i in years){
+    //     var year = years[i];
+    for (var year = year_begin; year <= year_end; year++){
         // var date        = ee.Date.fromYMD(year, 1, 1);
         var filter_year = ee.Filter.calendarRange(year, year, 'year');
         var img  = ee.Image(imgcol.filter(filter_year).first());
@@ -136,7 +138,7 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
         Export.table.toDrive({
             collection: x, 
             description: task,
-            folder: "PML", 
+            folder: "IGBP", 
             fileFormat: 'GeoJSON'
         });
     }

@@ -28,8 +28,12 @@ var bounds = ee.Geometry.Rectangle(range, 'EPSG:4326', false);
 var annual, bands, folder, filename;
 var V2 = true;
 
+pml_v1_yearly = ee.ImageCollection(pml_v1_yearly.toList(20));
+pml_v2_yearly = ee.ImageCollection(pml_v2_yearly.toList(20));
+
 var annual1   = pml_v1_yearly.mean().select([0, 1, 2, 3, 4]).toFloat();
 var annual2   = pml_v2_yearly.mean().select([0, 1, 2, 3]).toFloat();
+// print(annual1)
 
 if (V2) {
     annual   = pml_v2_yearly.mean();
@@ -43,7 +47,7 @@ if (V2) {
     filename = 'PMLv1_Annual_average_12th';
 }
 annual = annual.select(bands);
-// print(annual);
+print(annual);
 
 var ET     = annual.expression('b("Ec") + b("Es")+ b("Ei")').rename('ET'); //, b("ET_water")
 var per_Ei = annual.expression(' b("Ei") / ET * 100', {ET:ET}).rename('per');
@@ -147,14 +151,22 @@ function ExportImg_deg(Image, range, task, scale, drive, folder, crs, crs_trans)
 // export_image(annual2, 'PMLv2_Annual_average_240th');
 
 // var pkg_export = require('users/kongdd/public:pkg_export.js');
-scale = 1/240; 
-drive = false; 
-crs   = 'SR-ORG:6974';
+crs    = 'SR-ORG:6974';
+folder = '';
+
+scale = 1/12; drive = true;
+ExportImg_deg(annual1, range, 'PMLv1_Annual_average_'.concat(1/scale), scale, drive, folder, 'EPSG:4326');
+ExportImg_deg(annual2, range, 'PMLv2_Annual_average_'.concat(1/scale), scale, drive, folder, 'EPSG:4326');
+
 folder = 'projects/pml_evapotranspiration/PML/OUTPUT/MultiAnnualMean';
+// scale = 1/12; drive = false;
+// ExportImg_deg(annual1, range, 'PMLv1_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
+// ExportImg_deg(annual2, range, 'PMLv2_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
 
-// pkg_export.ExportImg_deg(annual1, range, 'PMLv1_Annual_average', scale, drive, folder, crs);
-ExportImg_deg(annual2, range, 'PMLv2_Annual_average', scale, drive, folder, crs);
-
+// scale = 1/240; drive = false;
+// ExportImg_deg(annual1, range, 'PMLv1_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
+// ExportImg_deg(annual2, range, 'PMLv2_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
+    
 // export_image(annual_v1    , 'PMLv1_Annual_average');
 // 2. try to Export video
 WUE = WUE.visualize(vis_wue);
