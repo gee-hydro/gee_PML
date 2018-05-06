@@ -36,8 +36,15 @@ var range  = [-180, -60, 0, 90],
     year_begin = 2003,
     year_end   = 2017;
     
-// range  = [0, -60, 180, 90];
-// prefix = 'PMLV2_IGBP_mean_2_';
+range  = [0, -60, 180, 90];
+prefix = 'PMLV2_IGBP_mean_2_';
+
+imgcol_year = ee.ImageCollection(imgcol_year.toList(20, 0))
+    .map(function(img){
+        var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename('ET'); // + b("ET_water")
+        return img.addBands(ET);
+    });
+print(imgcol_year);
     
 /** aggregated by IGBP */
 var IGBPcode     = ee.List.sequence(0, 17);
@@ -54,12 +61,6 @@ ImgCol_land = ImgCol_land.map(function(land){
     return(land);
 }).select([0], ['land']);
 
-// imgcol_year = ee.ImageCollection(imgcol_year.toList(20, 0))
-//     .map(function(img){
-//         var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename('ET'); // + b("ET_water")
-//         return img.addBands(ET);
-//     });
-print(imgcol_year);
 ///////////////////////////////////////////////////////////////
 
 IGBPmean(imgcol_year, bands, scale, prefix, year_begin, year_end);
