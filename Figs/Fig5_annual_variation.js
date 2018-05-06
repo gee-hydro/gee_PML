@@ -13,10 +13,10 @@ var imgcol_year, bands, folder, prefix, years,
     V2 = true;
     
 if (V2){
-    imgcol_year = pml_v2_yearly2;
+    imgcol_year = pml_v2_yearly;
     bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
     folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly'; //
-    prefix = 'PMLV2_IGBP_mean_';
+    prefix = 'PMLV2_IGBP_mean_1_';
     years  = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2012, 2013]; 
 } else{
     imgcol_year = pml_v1_yearly2;
@@ -30,12 +30,15 @@ if (V2){
 print(years);
 
 /** GLOBAL PARAMETERS */
-var range  = [-180, -60, 180, 90],
+var range  = [-180, -60, 0, 90],
     bounds = ee.Geometry.Rectangle(range, 'EPSG:4326', false), //[xmin, ymin, xmax, ymax]
     scale  = 1e3,
     year_begin = 2003,
     year_end   = 2017;
-
+    
+// range  = [0, -60, 180, 90];
+// prefix = 'PMLV2_IGBP_mean_2_';
+    
 /** aggregated by IGBP */
 var IGBPcode     = ee.List.sequence(0, 17);
 var IGBPname_all = ["UNC", "ENF", "EBF", "DNF", "DBF", "MF", 
