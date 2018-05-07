@@ -16,7 +16,7 @@ if (V2){
     imgcol_year = pml_v2_yearly;
     bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
     folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly'; //
-    prefix = 'PMLV2_IGBP_mean_1_';
+    prefix = 'PMLV2_IGBP_mean_';
     years  = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2012, 2013]; 
 } else{
     imgcol_year = pml_v1_yearly2;
@@ -30,14 +30,14 @@ if (V2){
 print(years);
 
 /** GLOBAL PARAMETERS */
-var range  = [-180, -60, 0, 90],
+var range  = [-180, -60, 180, 90],
     bounds = ee.Geometry.Rectangle(range, 'EPSG:4326', false), //[xmin, ymin, xmax, ymax]
     scale  = 1e3,
     year_begin = 2003,
     year_end   = 2017;
     
-range  = [0, -60, 180, 90];
-prefix = 'PMLV2_IGBP_mean_2_';
+// range  = [0, -60, 180, 90];
+// prefix = 'PMLV2_IGBP_mean_2_';
 
 imgcol_year = ee.ImageCollection(imgcol_year.toList(20, 0))
     .map(function(img){
@@ -90,17 +90,18 @@ MOD16A2_yr = MOD16A2_yr.select(['ET', 'PET']).map(function(img){
 function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
     /** define reducer */
     // define reduction function (client-side), see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Reduce
-    var combine = function(reducer, prev) { return reducer.combine(prev, null, true); };
-    var reducers = [ ee.Reducer.mean(), ee.Reducer.count(), ee.Reducer.stdDev()];
+    // var combine = function(reducer, prev) { return reducer.combine(prev, null, true); };
+    // var reducers = [ ee.Reducer.mean(), ee.Reducer.count(), ee.Reducer.stdDev()];
+    var reducer = ee.Reducer.sum();
     // print(reducers.slice(1), 'reducers.slice(1)');
-    var reducer = reducers.slice(1).reduce(combine, reducers[0]);
+    // var reducer = reducers.slice(1).reduce(combine, reducers[0]);
     // var reducer = ee.Reducer.mean().combine(ee.Reducer.count(), null, true);
     ////////////////////////////////////////////////////////////////////////////
     // print(imgcol, 'imgcol_check');
     
-    for (var i in years){
-        var year = years[i];
-    // for (var year = year_begin; year <= year_end; year++){
+    // for (var i in years){
+    //     var year = years[i];
+    for (var year = year_begin; year <= year_end; year++){
         // var date        = ee.Date.fromYMD(year, 1, 1);
         var filter_year = ee.Filter.calendarRange(year, year, 'year');
         var img  = ee.Image(imgcol.filter(filter_year).first());
