@@ -1,5 +1,6 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var pmlv2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/TEMP/PML_V2_yearly");
+var pmlv2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/TEMP/PML_V2_yearly"),
+    pmlv1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/TEMP/PML_V1_yearly");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var pkg_export = require('users/kongdd/public:pkg_export.js');
 
