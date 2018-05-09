@@ -56,20 +56,17 @@ var PML_V2_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/PML_
       "coordinates": []
     }),
     au_poly = ee.FeatureCollection("users/kongdd/shp/au_poly"),
-    PML_V2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/PML_V2_8day");
+    PML_V2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /**
  * PML_V2 usage illustration 
  * 
  * Dongdong Kong, 22 March, 2018
  */
-// print(PML_V2);
-// load visualization pkg
-var pkg_vis   = require('users/kongdd/pkgs:src/pkg_vis.js');
+var pkg_vis    = require('users/kongdd/public:pkg_vis.js');
+var pkg_export = require('users/kongdd/public:pkg_export.js');
 
-/**
- * 1. visualization
- */ 
+/** 1. visualization */ 
 var palette = ['#570088', '#920057', '#CE0027', '#FF0A00', '#FF4500', '#FF8000', '#FFB100', '#FFD200', '#FFF200', '#C7EE03', '#70D209', '#18B80E', '#067F54', '#033FA9', '#0000FF'];
 var vis_gpp = { min: 0.0, max: 60.0, palette: palette.reverse(), bands: 'GPP'};
 var vis_et  = { min: 0.0, max: 1600.0, palette: palette.reverse(), bands: 'ET'};
@@ -92,9 +89,7 @@ if (vis){
     // pkg_vis.series(PML_V2_yearly, vis_et, 'Annual ET', region, label);
 }
 
-/**
- * 2. export data where you interested
- */
+/** 2. export data where you interested */
 
 // Map.addLayer(au_poly, {}, 'au_poly');
 // Map.centerObject(au_poly, 4);
@@ -108,11 +103,9 @@ if (vis){
 
 /** save data */
 // print(au_poly.geometry());
-
-var pkg_export = require('users/kongdd/pkgs:src/Export_Table.js');
 var range  = [-180, -60, 180, 90], //[lon_min, lat_min, lon_max, lat_max]
     scale  = 1 / 240, //1/240, unit, degree
     drive  = false,
-    folder = 'projects/pml_evapotranspiration/PML/PML_V1_yearly'; //
-crs = 'SR-ORG:6974'; //default crs was modis projection in pkg_export.ExportImgCol
-pkg_export.ExportImgCol(imgcol_years, undefined, range, scale, drive, folder);
+    folder = 'projects/pml_evapotranspiration/PML/PML_V2_yearly', //
+    crs = 'SR-ORG:6974'; //default crs was modis projection in pkg_export.ExportImgCol
+// pkg_export.ExportImgCol(imgcol_years, undefined, range, scale, drive, folder, crs);
