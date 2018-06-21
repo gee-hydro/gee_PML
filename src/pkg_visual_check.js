@@ -143,7 +143,7 @@ function showmap(){
 
 var maps = showmap();
 maps[0].add(zoomToPoint(points, 'site', 14, false));
-maps[0].setCenter(137.81, -20.63, 5);
+maps[0].setCenter(82.88, 24.37, 5);
 /** max value */
 // var label_max  = ui.Label('max value: ');
 // var slider_max = ui.Slider({
