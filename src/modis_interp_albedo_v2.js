@@ -74,11 +74,11 @@ var count1 = Albedo_d8.map(function(img){
     return img.expression("b('qc') == 4");
 }).sum();
 
-// Map.addLayer(count1, {}, 'count1');
-// Map.addLayer(count2, {}, 'count2');
+Map.addLayer(count1, {}, 'count1');
+Map.addLayer(count2, {}, 'count2');
 
 // Map.addLayer(imgcol_albedo, {}, 'origin');
 // Map.addLayer(Albedo_d8, {}, 'Albedo_d8');
 // print(Albedo_d8, dateList);
 // pkg_export.ExportImgCol(emiss_interp, dateList, range, scale, drive, folder, crs);
-pkg_export.ExportImgCol(Albedo_d8, dateList, range, scale, drive, folder); //, crs
+// pkg_export.ExportImgCol(Albedo_d8, dateList, range, scale, drive, folder); //, crs
