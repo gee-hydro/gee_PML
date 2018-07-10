@@ -99,7 +99,7 @@ if (type === 'albedo'){
 var prop            = 'dn',
     imgcol_input    = imgcol_all.filter(filter_date),
     imgcol_his_mean = pkg_trend.aggregate_prop(imgcol_all.select(0), prop, 'median');
-print(imgcol_input);
+
 
 var imgcol_interp = linearInterp(imgcol_input, nday); //.combine(imgcol);
 
@@ -109,7 +109,8 @@ var imgcol_interp = linearInterp(imgcol_input, nday); //.combine(imgcol);
 // print(imgcol_all, imgcol_interp, 'linear')
 // print(imgcol_hisavg_month, imgcol_hisavg_year);
 var imgcol_his = historyInterp(imgcol_interp, imgcol_his_mean, prop);
-print(imgcol_his)
+// print(imgcol_input);
+// print(imgcol_his)
 
 
 var point = /* color: #d63000 */ee.Geometry.Point([-104.48822021484375, 65.42901140039487]);
@@ -117,7 +118,7 @@ var chart = ui.Chart.image.series({
         imageCollection: imgcol_his, //['ETsim', 'Es', 'Eca', 'Ecr', 'Es_eq']
         region         : point,
         reducer        : ee.Reducer.first(),
-        scale          : 500
+        scale          : 5000
     });
 print(chart);
 
@@ -127,7 +128,7 @@ print(chart);
 // var emiss_interp  = imgcol_his.map(zip_emiss).select([1, 0]);
 // var imgcol_out  = imgcol_his.filter(filter_date2).map(zip_emiss).select([1, 0]);
 // var folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d'; 
-print(imgcol_his)
+// print(imgcol_his)
 var imgcol_out = imgcol_his.filter(filter_date2).map(zipfun).select([1, 0]);
 
 
@@ -141,7 +142,7 @@ var range      = [-180, -60, 180, 90], // keep consistent with modis data range
 var dateList = ee.List(imgcol_input.filter(filter_date2).aggregate_array('system:time_start'))
             .map(function(date){ return ee.Date(date).format('yyyy-MM-dd'); }).getInfo();
 
-print(imgcol_out);
+// print(imgcol_out);
 // pkg_export.ExportImgCol(emiss_interp, dateList, range, scale, drive, folder, crs);
 // pkg_export.ExportImgCol(imgcol_out, dateList, range, scale, drive, folder, crs);
 
