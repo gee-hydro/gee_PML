@@ -54,7 +54,7 @@ if (type === 'albedo'){
     print('[running]', type);
     imgcol_all = Albedo_d8;
     scale  = 1/240;
-    folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d'; //Emiss_interp_8d
+    folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d_linear'; //Emiss_interp_8d
     zipfun = zip_albedo;
 }else if (type === 'emiss'){
     print('[running]', type);
@@ -100,7 +100,7 @@ var imgcol_his_1y = pkg_smooth.historyInterp(imgcol_his_1m, imgcol_hisavg_year ,
 // var imgcol_out  = imgcol_his.filter(filter_date2).map(zip_emiss).select([1, 0]);
 // var folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d'; 
 // print(imgcol_his)
-var imgcol_out = imgcol_his_1y.filter(filter_date2).map(zipfun).select([1, 0]);
+var imgcol_out = imgcol_interp.filter(filter_date2).map(zipfun).select([1, 0]);
 
 // print(imgcol_input, imgcol_out)
 
