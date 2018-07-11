@@ -21,11 +21,13 @@ var date_begin = ee.Date(year_begin.toString().concat(md_begin)).advance(-nday, 
 var filter_date  = ee.Filter.date(date_begin, date_end);
 var filter_date2 = ee.Filter.date(date_begin.advance(nday, 'day'), date_end.advance(-nday, 'day'));
 
+
 ////////////////////////////////////////////////////////////////////////
 var Albedo_raw  = ee.ImageCollection('MODIS/006/MCD43A3')
         .select(['Albedo_WSA_shortwave']) //, ['albedo'], 'BRDF_Albedo_Band_Mandatory_Quality_shortwave'
         .map(pkg_trend.add_dn(true, 8));
 // Map.addLayer(Albedo_raw.limit(365), {}, 'albedo');
+
 
 var Albedo_d8 = pkg_trend.aggregate_prop(Albedo_raw, 'dn', 'median')
     //scale factor 0.001, no units;
@@ -34,6 +36,7 @@ var Albedo_d8 = pkg_trend.aggregate_prop(Albedo_raw, 'dn', 'median')
     .select([0], ['Albedo']);
 // print(Albedo_d8.limit(3))
 // Map.addLayer(Albedo_d8.limit(92), {}, 'albedo raw');
+var prj_albedo = ee.Image(Albedo_raw.select(0).first()).projection();
 
 var Emiss_d8 = ee.ImageCollection('MODIS/006/MOD11A2')
     .select(['Emis_31', 'Emis_32'])
@@ -43,25 +46,28 @@ var Emiss_d8 = ee.ImageCollection('MODIS/006/MOD11A2')
             .copyProperties(img, ['system:time_start', 'system:id']);
     }).select([0], ['Emiss'])
     .map(pkg_trend.add_dn(false, 8));
+var prj_emiss = ee.Image(Emiss_d8.select(0).first()).projection();
 
 var dateList = ee.List(Emiss_d8.filter(filter_date2).aggregate_array('system:time_start'))
     .map(function(date){ return ee.Date(date).format('yyyy-MM-dd'); }).getInfo();
 /** common parameters */
 var type = 'albedo';
 
-var imgcol_all, scale, folder, zipfun;
+var imgcol_all, scale, folder, zipfun, prj;
 if (type === 'albedo'){
     print('[running]', type);
     imgcol_all = Albedo_d8;
     scale  = 1/240;
     folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d_linear'; //Emiss_interp_8d
     zipfun = zip_albedo;
+    prj = prj_albedo;
 }else if (type === 'emiss'){
     print('[running]', type);
     imgcol_all = Emiss_d8;
     scale  = 1/120;
     folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d'; //Emiss_interp_8d
     zipfun = zip_emiss;
+    prj = prj_emiss;
 }
 // imgcol_all      = ee.ImageCollection(imgcol_all.toList(1000, 0))
 //     .map(pkg_trend.add_dn(false, 8))
@@ -73,7 +79,7 @@ var prop            = 'dn',
     imgcol_his_mean = pkg_trend.aggregate_prop(imgcol_all.select(0), prop, 'median');
 
 // print(imgcol_input)
-print(dateList);
+// print(dateList);
 
 var imgcol_interp = pkg_smooth.linearInterp(imgcol_input, nday); //.combine(imgcol);
 
@@ -114,7 +120,9 @@ var range      = [-180, -60, 180, 90], // keep consistent with modis data range
 // print(imgcol_out.limit(2));
 // print(dateList);
 // pkg_export.ExportImgCol(emiss_interp, dateList, range, scale, drive, folder, crs);
-pkg_export.ExportImgCol(imgcol_out, dateList.slice(0, 2), range, cellsize, type, folder, crs);
+// print(prj, prj.crs(), prj.transform())
+pkg_export.ExportImgCol(imgcol_out, dateList.slice(2, 4), range, cellsize, type, folder, 
+    crs, prj.transform());
 
 //////////////////////////// MAIN FUNCTIONS ////////////////////////////////////
 function get_chart(imgcol, name){
