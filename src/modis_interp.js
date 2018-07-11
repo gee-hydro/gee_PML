@@ -64,11 +64,15 @@ if (type === 'albedo'){
 // imgcol_all      = ee.ImageCollection(imgcol_all.toList(1000, 0))
 //     .map(pkg_trend.add_dn(false, 8))
 ///////////////////////////////////////////////////////////////////
-print(imgcol_all, 'imgcol_all');
+// print(imgcol_all, 'imgcol_all');
 
 var prop            = 'dn',
     imgcol_input    = imgcol_all.filter(filter_date),
     imgcol_his_mean = pkg_trend.aggregate_prop(imgcol_all.select(0), prop, 'median');
+
+var dateList = ee.List(imgcol_input.aggregate_array('system:time_start'))
+            .map(function(date){ return ee.Date(date).format('yyyy-MM-dd'); }).getInfo();
+print(dateList);
 
 var imgcol_interp = pkg_smooth.linearInterp(imgcol_input, nday); //.combine(imgcol);
 
@@ -84,9 +88,9 @@ var imgcol_his_1y = pkg_smooth.historyInterp(imgcol_his_1m, imgcol_hisavg_year ,
 // print(imgcol, imgcol_interp);
 // print(imgcol_hisavg_d8, imgcol_hisavg_month, imgcol_hisavg_year);
 
-get_chart(imgcol_all   , 'imgcol_all');
-get_chart(imgcol_interp, 'imgcol_interp');
-get_chart(imgcol_his_1y, 'imgcol_his_1y');
+// get_chart(imgcol_all   , 'imgcol_all');
+// get_chart(imgcol_interp, 'imgcol_interp');
+// get_chart(imgcol_his_1y, 'imgcol_his_1y');
 
 // var imgcol_his_year  = pkg_smooth.historyInterp(imgcol_his_month, imgcol_hisavg_year , 'Year');
 // var imgcol_his    = historyInterp(imgcol_interp);
@@ -95,17 +99,23 @@ get_chart(imgcol_his_1y, 'imgcol_his_1y');
 // var imgcol_out  = imgcol_his.filter(filter_date2).map(zip_emiss).select([1, 0]);
 // var folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d'; 
 // print(imgcol_his)
-var imgcol_out = imgcol_his.filter(filter_date2).map(zipfun).select([1, 0]);
+var imgcol_out = imgcol_his_1y.filter(filter_date2).map(zipfun).select([1, 0]);
+
+print(imgcol_input, imgcol_out)
 
 /** export data */
 var range      = [-180, -60, 180, 90], // keep consistent with modis data range
     range_high = [-180, 60, 180, 90], //
-    // scale = 1 / 240,
-    drive = false,
-    crs = 'SR-ORG:6974';
+    cellsize   = 1 / 240,
+    type       = 'asset',
+    crs        = 'SR-ORG:6974';
     // task = 'whit-4y';
-var dateList = ee.List(imgcol_input.filter(filter_date2).aggregate_array('system:time_start'))
-            .map(function(date){ return ee.Date(date).format('yyyy-MM-dd'); }).getInfo();
+
+dateList = dateList.getInfo();
+
+print(dateList);
+// pkg_export.ExportImgCol(emiss_interp, dateList, range, scale, drive, folder, crs);
+// pkg_export.ExportImgCol(imgcol_out, dateList, range, cellsize, type, folder, crs);
 
 //////////////////////////// MAIN FUNCTIONS ////////////////////////////////////
 function get_chart(imgcol, name){
@@ -138,11 +148,6 @@ function zip_albedo(img){
     var x = img.expression('b(0) * 1000').toUint16();
     return img.select('qc').toUint8().addBands(x);
 }
-
-
-// print(imgcol_out);
-// pkg_export.ExportImgCol(emiss_interp, dateList, range, scale, drive, folder, crs);
-// pkg_export.ExportImgCol(imgcol_out, dateList, range, scale, drive, folder, crs);
 
 // print(albedo_interp);
 // var point = ee.Geometry.Point([-104.48822021484375, 65.42901140039487]);
