@@ -53,18 +53,18 @@ var dateList = ee.List(Emiss_d8.filter(filter_date2).aggregate_array('system:tim
 /** common parameters */
 var type = 'albedo';
 
-var imgcol_all, scale, folder, zipfun, prj;
+var imgcol_all, cellsize, folder, zipfun, prj;
 if (type === 'albedo'){
     print('[running]', type);
     imgcol_all = Albedo_d8;
-    scale  = 1/240;
+    cellsize  = 1/240;
     folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d_linear'; //Emiss_interp_8d
     zipfun = zip_albedo;
     prj = prj_albedo;
 }else if (type === 'emiss'){
     print('[running]', type);
     imgcol_all = Emiss_d8;
-    scale  = 1/120;
+    cellsize  = 1/120;
     folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d'; //Emiss_interp_8d
     zipfun = zip_emiss;
     prj = prj_emiss;
@@ -113,7 +113,7 @@ var imgcol_out = imgcol_interp.filter(filter_date2).map(zipfun).select([1, 0]);
 /** export data */
 var range      = [-180, -60, 180, 90], // keep consistent with modis data range
     range_high = [-180, 60, 180, 90], //
-    cellsize   = 1 / 240,
+    // cellsize   = 1 / 240,
     type       = 'asset',
     crs        = 'SR-ORG:6974';
     // task = 'whit-4y';
@@ -121,7 +121,7 @@ var range      = [-180, -60, 180, 90], // keep consistent with modis data range
 // print(dateList);
 // pkg_export.ExportImgCol(emiss_interp, dateList, range, scale, drive, folder, crs);
 // print(prj, prj.crs(), prj.transform())
-pkg_export.ExportImgCol(imgcol_out, dateList.slice(2, 4), range, cellsize, type, folder, 
+pkg_export.ExportImgCol(imgcol_out, dateList, range, cellsize, type, folder, 
     crs, prj.transform());
 
 //////////////////////////// MAIN FUNCTIONS ////////////////////////////////////
