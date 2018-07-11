@@ -44,6 +44,8 @@ var Emiss_d8 = ee.ImageCollection('MODIS/006/MOD11A2')
     }).select([0], ['Emiss'])
     .map(pkg_trend.add_dn(false, 8));
 
+var dateList = ee.List(Emiss_d8.filter(filter_date2).aggregate_array('system:time_start'))
+    .map(function(date){ return ee.Date(date).format('yyyy-MM-dd'); }).getInfo();
 /** common parameters */
 var type = 'albedo';
 
@@ -70,8 +72,7 @@ var prop            = 'dn',
     imgcol_input    = imgcol_all.filter(filter_date),
     imgcol_his_mean = pkg_trend.aggregate_prop(imgcol_all.select(0), prop, 'median');
 
-var dateList = ee.List(imgcol_input.aggregate_array('system:time_start'))
-            .map(function(date){ return ee.Date(date).format('yyyy-MM-dd'); }).getInfo();
+// print(imgcol_input)
 print(dateList);
 
 var imgcol_interp = pkg_smooth.linearInterp(imgcol_input, nday); //.combine(imgcol);
@@ -101,7 +102,7 @@ var imgcol_his_1y = pkg_smooth.historyInterp(imgcol_his_1m, imgcol_hisavg_year ,
 // print(imgcol_his)
 var imgcol_out = imgcol_his_1y.filter(filter_date2).map(zipfun).select([1, 0]);
 
-print(imgcol_input, imgcol_out)
+// print(imgcol_input, imgcol_out)
 
 /** export data */
 var range      = [-180, -60, 180, 90], // keep consistent with modis data range
@@ -110,12 +111,10 @@ var range      = [-180, -60, 180, 90], // keep consistent with modis data range
     type       = 'asset',
     crs        = 'SR-ORG:6974';
     // task = 'whit-4y';
-
-dateList = dateList.getInfo();
-
-print(dateList);
+// print(imgcol_out.limit(2));
+// print(dateList);
 // pkg_export.ExportImgCol(emiss_interp, dateList, range, scale, drive, folder, crs);
-// pkg_export.ExportImgCol(imgcol_out, dateList, range, cellsize, type, folder, crs);
+pkg_export.ExportImgCol(imgcol_out, dateList.slice(0, 2), range, cellsize, type, folder, crs);
 
 //////////////////////////// MAIN FUNCTIONS ////////////////////////////////////
 function get_chart(imgcol, name){
