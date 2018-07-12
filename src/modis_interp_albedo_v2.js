@@ -21,20 +21,69 @@ var imgcol_his = his_interp(imgcol, imgcol_all);
 /** addtional history average interpolation */
 function his_interp(imgcol, imgcol_all){
     // Just for Albedo
-    var imgcol_hisavg_d8    = pkg_trend.aggregate_prop(imgcol_all.select(0), 'dn', 'median').map(zip_albedo),
-        imgcol_hisavg_1m = pkg_trend.aggregate_prop(imgcol_all.select(0), 'Month', 'median').map(zip_albedo),
+    var imgcol_hisavg_d8  = pkg_trend.aggregate_prop(imgcol_all.select(0), 'dn', 'median').map(zip_albedo),
+        imgcol_hisavg_1m  = pkg_trend.aggregate_prop(imgcol_all.select(0), 'Month', 'median').map(zip_albedo),
         imgcol_hisavg_1y  = pkg_trend.aggregate_prop(imgcol_all.select(0), 'Year', 'median').map(zip_albedo);
 
-    var imgcol_his_d8 = pkg_smooth.historyInterp(imgcol, imgcol_hisavg_d8   , 'dn');
-    var imgcol_his_1m = pkg_smooth.historyInterp(imgcol_his_d8, imgcol_hisavg_1m, 'month');
-    var imgcol_his_1y = pkg_smooth.historyInterp(imgcol_his_1m, imgcol_hisavg_1y , 'year');
+    var imgcol_his_d8 = historyInterp(imgcol, imgcol_hisavg_d8   , 'dn');
+    var imgcol_his_1m = historyInterp(imgcol_his_d8, imgcol_hisavg_1m, 'month');
+    var imgcol_his_1y = historyInterp(imgcol_his_1m, imgcol_hisavg_1y , 'year');
 
     // print(imgcol_hisavg_d8, imgcol_hisavg_1m, imgcol_hisavg_1y)
     // print(imgcol_his_d8, imgcol_his_1m, imgcol_his_1y)
 
-    var max = imgcol_his_1y.max();
-    // Map.addLayer(max, {min:0, max:1e3}, 'max')
+    var max = imgcol_his_1m.select(0).max();
+    Map.addLayer(max, {min:0, max:1e3}, 'max')
     return imgcol_his_1y;
+}
+
+function replace_mask(img, newimg, nodata) {
+    // var con = img.mask();
+    // var res = img., NODATA
+    nodata   = nodata || 0;
+    var mask = img.mask();
+    
+    // error: if newimg also has missing values, original value will be masked.
+    // img = img.expression("img*mask + newimg*(!mask)", {
+    //     img    : img.unmask(),  // default unmask value is zero
+    //     newimg : newimg, 
+    //     mask   : mask
+    // });
+    
+    img = img.unmask(nodata);
+    img = img.where(mask.not(), newimg);
+    // error thoughts: mask already in newimg, so it's unnecessary to updateMask again
+    
+    img = img.updateMask(img.neq(nodata));
+    return img;
+}
+/** all those interpolation functions are just designed for 8-day temporal scale */
+function historyInterp(imgcol, imgcol_his_mean, prop){
+    if (typeof prop === 'undefined') { prop = 'dn'; }
+    // var imgcol_his_mean = pkg_trend.aggregate_prop(imgcol.select(0), prop, 'median');
+    
+    var f = ee.Filter.equals({leftField:prop, rightField:prop});
+    var c = ee.Join.saveAll({matchesKey:'history', ordering:'system:time_start', ascending:true})
+        .apply(imgcol, imgcol_his_mean, f);
+    // print(c, 'c');
+    
+    var interpolated = ee.ImageCollection(c.map(function(img) {
+        img = ee.Image(img);
+        
+        var history = ee.Image(ee.List(img.get('history')).get(0));
+        var props   = img.propertyNames().remove('history');
+        img  = img.set('history', null);
+        
+        var qc = img.select('qc');
+        img    = img.select(0);
+        
+        qc = qc.add(img.mask().not()); // 0:good value, 1:linear interp; 2:his interp
+        var interp  = replace_mask(img, history);
+        return interp.addBands(qc).copyProperties(img, img.propertyNames());
+        //.copyProperties(img, ['system:time_start', 'system:id', prop]);
+    }));
+    // print(interpolated, 'interpolated');
+    return interpolated;
 }
 
 /** export data */
