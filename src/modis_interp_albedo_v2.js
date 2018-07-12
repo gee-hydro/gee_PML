@@ -1,5 +1,5 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var imgcol_albedo = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d");
+var imgcol_albedo = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d_linear");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /** Albedo second interpolation: Monthly and Yearly History Average */
 var pkg_join   = require('users/kongdd/public:pkg_join.js');
@@ -10,6 +10,20 @@ var pkg_export = require('users/kongdd/public:pkg_export.js');
 
 var prop_d8 = ['system:time_start', 'system:id', 'd8']; // 8 days ImgCol essential properties
 var filter_date  = ee.Filter.date('2012-01-01', '2017-12-31');
+
+
+imgcol_albedo = ee.ImageCollection(imgcol_albedo.toList(1000))
+    .map(addProp);
+    
+var imgcol_all = imgcol_albedo;
+
+var imgcol_hisavg_d8    = pkg_trend.aggregate_prop(imgcol_all.select(0), 'dn', 'median').map(zip_albedo),
+    imgcol_hisavg_month = pkg_trend.aggregate_prop(imgcol_all.select(0), 'Month', 'median').map(zip_albedo),
+    imgcol_hisavg_year  = pkg_trend.aggregate_prop(imgcol_all.select(0), 'Year', 'median').map(zip_albedo);
+
+var imgcol_his_d8 = pkg_smooth.historyInterp(imgcol_interp, imgcol_hisavg_d8   , 'dn');
+var imgcol_his_1m = pkg_smooth.historyInterp(imgcol_his_d8, imgcol_hisavg_month, 'month');
+var imgcol_his_1y = pkg_smooth.historyInterp(imgcol_his_1m, imgcol_hisavg_year , 'year');
 
 /** continue history average interpolation */
 function addProp(img){
@@ -38,32 +52,30 @@ function his_interp(imgcol, imgcol_all){
     return imgcol_his_year;
 }
 
-
 // var imgcol_albedo = ee.ImageCollection(imgcol_albedo.toList(1000))
 //     .map(addProp);
-imgcol_albedo = ee.ImageCollection(imgcol_albedo.toList(1000))
-    .map(addProp);
+
     // .map(function(img) {
     //     var albedo = img.select(0).multiply(0.001);
     //     return img.select(1).addBands(albedo);
     // }).select([1, 0], ['Albedo', 'qc']);//scale factor 0.001, no units;
 
-var Albedo_d8 = imgcol_albedo.filter(filter_date);
-    Albedo_d8 = his_interp(Albedo_d8, imgcol_albedo).map(function(img){
-        var qc = img.select('qc').toUint8();
-        return img.select(0).toUint16().addBands(qc)
-            .copyProperties(img, img.propertyNames());
-    });
+// var Albedo_d8 = imgcol_albedo.filter(filter_date);
+//     Albedo_d8 = his_interp(Albedo_d8, imgcol_albedo).map(function(img){
+//         var qc = img.select('qc').toUint8();
+//         return img.select(0).toUint16().addBands(qc)
+//             .copyProperties(img, img.propertyNames());
+//     });
 
 /** export data */
 var range      = [-180, -60, 180, 90], // keep consistent with modis data range
     range_high = [-180,  60, 180, 90], //
-    scale = 1 / 240,
-    drive = false,
-    folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d_v2', //Emiss_interp_8d
-    crs = 'SR-ORG:6974';
-    // task = 'whit-4y';
-var dateList = ee.List(Albedo_d8.filter(filter_date).aggregate_array('system:time_start'))
+    cellsize   = 1 / 240,
+    type       = 'asset',
+    folder     = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d_v2', //Emiss_interp_8d
+    crs        = 'SR-ORG:6974';
+    // task    = 'whit-4y';
+var dateList   = ee.List(imgcol_all.filter(filter_date).aggregate_array('system:time_start'))
             .map(function(date){ return ee.Date(date).format('yyyy-MM-dd'); }).getInfo();
 
 var count2 = Albedo_d8.map(function(img){
