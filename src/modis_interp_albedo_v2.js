@@ -14,6 +14,16 @@ var filter_date  = ee.Filter.date('2012-01-01', '2017-12-31');
 imgcol_albedo = ee.ImageCollection(imgcol_albedo.toList(1000))
     .map(addProp);
 
+var temp = imgcol_albedo.map(function(img){
+    var qc = img.select('qc');
+    return img.updateMask(qc.eq(0));
+});
+var size = temp.count();
+var x = size.expression('b(1) - b(0)')
+print(size);
+Map.addLayer(x, {min:0, max:2})
+
+
 var imgcol_all = imgcol_albedo, 
     imgcol     = imgcol_albedo.filter(filter_date);
     
