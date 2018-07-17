@@ -1,11 +1,14 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var pml_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/PML_V2_8day"),
-    pml_v1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/PML_V1_8day"),
-    pml_v1_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly"),
+var pml_v1_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly"),
     pml_v2_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly"),
-    img_lai = ee.Image("MODIS/006/MCD15A3H/2002_07_04");
+    img_lai = ee.Image("MODIS/006/MCD15A3H/2002_07_04"),
+    pml_v1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day"),
+    pml_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
-
+/** 
+ * Spatial distribution and ET component percentage
+ * Dongdong Kong
+ */
 var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
 var pkg_color = require('users/gena/packages:colorbrewer').Palettes;
 
@@ -68,6 +71,8 @@ var palette = ['#570088', '#920057', '#CE0027', '#FF0A00', '#FF4500', '#FF8000',
 var vis_wue = { min: 0.0, max: 4.0, palette: palette};
 var vis_per = { min: 0.0, max: 20 , palette: palette, bands: 'per'};
 
+var vis_per = { min: 0, max: 100 , palette: palette, bands: 'per'};
+
 // Map.addLayer(annual, vis_gpp, 'annual average GPP');
 // pkg_vis.grad_legend(vis_gpp, 'annual average GPP /n(gC m^-2 y^-1)', true);
 
@@ -80,10 +85,10 @@ var vis_per = { min: 0.0, max: 20 , palette: palette, bands: 'per'};
 // Map.addLayer(WUE   , vis_wue, 'annual average WUE');
 // grad_legend(vis_wue, 'annual average WUE', true);
 
-// Map.addLayer(per_Ei   , vis_per, 'per_Ei');
-// Map.addLayer(per_Es   , vis_per, 'per_Es');
-// Map.addLayer(per_Ec   , vis_per, 'per_Ec');
-// pkg_vis.grad_legend(vis_per, 'percentage', true);
+Map.addLayer(per_Ei   , vis_per, 'per_Ei');
+Map.addLayer(per_Es   , vis_per, 'per_Es');
+Map.addLayer(per_Ec   , vis_per, 'per_Ec');
+pkg_vis.grad_legend(vis_per, 'percentage', true);
 
 // 1. try to Export to drive
 var scale = 1/240,
@@ -224,5 +229,5 @@ var mainPanel = ui.Panel({
     layout: ui.Panel.Layout.Flow('vertical'),
     style: { stretch: "both" }
 });
-ui.root.clear();
-ui.root.add(mainPanel);
+// ui.root.clear();
+// ui.root.add(mainPanel);
