@@ -1,6 +1,6 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var pmlv2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/TEMP/PML_V2_yearly"),
-    pmlv1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/TEMP/PML_V1_yearly");
+var pml_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day"),
+    region = ee.FeatureCollection("users/zhangyq/Tibetan/subbasin");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var pkg_export = require('users/kongdd/public:pkg_export.js');
 
@@ -22,7 +22,7 @@ range = [73, 25, 105, 40];
 // Map.addLayer(region);
 
 // var range  = [-180, -60, 180, 90];
-var cellsize = 1 / 240, //1/240,
+var cellsize = 1 / 20, //1/240,
     type   = 'drive',
     folder = 'PMLV2TP', 
     crs    = 'EPSG:4326'; //
