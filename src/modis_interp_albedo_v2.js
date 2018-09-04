@@ -18,6 +18,7 @@ var temp = imgcol_albedo.map(function(img){
     var qc = img.select('qc');
     return img.updateMask(qc.eq(0));
 });
+
 var size = temp.count();
 var x = size.expression('b(1) - b(0)')
 print(size);

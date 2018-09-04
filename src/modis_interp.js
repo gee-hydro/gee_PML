@@ -22,7 +22,7 @@ var filter_date  = ee.Filter.date(date_begin, date_end);
 var filter_date2 = ee.Filter.date(date_begin.advance(nday, 'day'), date_end.advance(-nday, 'day'));
 
 
-////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 var Albedo_raw  = ee.ImageCollection('MODIS/006/MCD43A3')
         .select(['Albedo_WSA_shortwave']) //, ['albedo'], 'BRDF_Albedo_Band_Mandatory_Quality_shortwave'
         .map(pkg_trend.add_dn(true, 8));
@@ -36,7 +36,6 @@ var Albedo_d8 = pkg_trend.aggregate_prop(Albedo_raw, 'dn', 'median')
     .select([0], ['Albedo']);
 // print(Albedo_d8.limit(3))
 // Map.addLayer(Albedo_d8.limit(92), {}, 'albedo raw');
-var prj_albedo = ee.Image(Albedo_raw.select(0).first()).projection();
 
 var Emiss_d8 = ee.ImageCollection('MODIS/006/MOD11A2')
     .select(['Emis_31', 'Emis_32'])
@@ -46,7 +45,9 @@ var Emiss_d8 = ee.ImageCollection('MODIS/006/MOD11A2')
             .copyProperties(img, ['system:time_start', 'system:id']);
     }).select([0], ['Emiss'])
     .map(pkg_trend.add_dn(false, 8));
-var prj_emiss = ee.Image(Emiss_d8.select(0).first()).projection();
+
+var prj_albedo = pkg_export.getProj(Albedo_raw);
+var prj_emiss  = pkg_export.getProj(Emiss_d8); // prj_emiss.prj
 
 var dateList = ee.List(Emiss_d8.filter(filter_date2).aggregate_array('system:time_start'))
     .map(function(date){ return ee.Date(date).format('yyyy-MM-dd'); }).getInfo();
@@ -122,7 +123,7 @@ var range      = [-180, -60, 180, 90], // keep consistent with modis data range
 // pkg_export.ExportImgCol(emiss_interp, dateList, range, scale, drive, folder, crs);
 // print(prj, prj.crs(), prj.transform())
 pkg_export.ExportImgCol(imgcol_out, dateList, range, cellsize, type, folder, 
-    crs, prj.transform());
+    crs, prj.crsTransform);
 
 //////////////////////////// MAIN FUNCTIONS ////////////////////////////////////
 function get_chart(imgcol, name){
