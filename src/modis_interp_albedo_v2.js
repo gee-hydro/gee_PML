@@ -40,11 +40,12 @@ function his_interp(imgcol, imgcol_all){
     var imgcol_his_1m = historyInterp(imgcol_his_d8, imgcol_hisavg_1m, 'month');
     var imgcol_his_1y = historyInterp(imgcol_his_1m, imgcol_hisavg_1y , 'year');
 
-    // print(imgcol_hisavg_d8, imgcol_hisavg_1m, imgcol_hisavg_1y)
-    // print(imgcol_his_d8, imgcol_his_1m, imgcol_his_1y)
+    print(imgcol_hisavg_d8, imgcol_hisavg_1m, imgcol_hisavg_1y)
+    print(imgcol_his_d8, imgcol_his_1m, imgcol_his_1y)
 
     var max = imgcol_his_1m.select(0).max();
     Map.addLayer(max, {min:0, max:1e3}, 'max')
+    Map.addLayer(imgcol_his_1m, {}, 'imgcol_his_1m')
     return imgcol_his_1y;
 }
 
