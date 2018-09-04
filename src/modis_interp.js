@@ -12,7 +12,7 @@ var bound = ee.Geometry.Rectangle(range, 'EPSG:4326', false);
 
 var nday       = 32; // interpolation searching 32d in the left and right
 var year_begin = 2012,
-    year_end   = year_begin + 5;
+    year_end   = year_begin + 2;
 
 var md_begin = (year_begin === 2002) ? '-07-04' : '-01-01';
 var date_begin = ee.Date(year_begin.toString().concat(md_begin)).advance(-nday, 'day'),
@@ -96,9 +96,9 @@ var imgcol_his_1y = pkg_smooth.historyInterp(imgcol_his_1m, imgcol_hisavg_year ,
 // print(imgcol, imgcol_interp);
 // print(imgcol_hisavg_d8, imgcol_hisavg_month, imgcol_hisavg_year);
 
-// get_chart(imgcol_all   , 'imgcol_all');
-// get_chart(imgcol_interp, 'imgcol_interp');
-// get_chart(imgcol_his_1y, 'imgcol_his_1y');
+get_chart(imgcol_all   , 'imgcol_all');
+get_chart(imgcol_interp, 'imgcol_interp');
+get_chart(imgcol_his_1y, 'imgcol_his_1y');
 
 // var imgcol_his_year  = pkg_smooth.historyInterp(imgcol_his_month, imgcol_hisavg_year , 'Year');
 // var imgcol_his    = historyInterp(imgcol_interp);
@@ -121,9 +121,9 @@ var range      = [-180, -60, 180, 90], // keep consistent with modis data range
 // print(imgcol_out.limit(2));
 // print(dateList);
 // pkg_export.ExportImgCol(emiss_interp, dateList, range, scale, drive, folder, crs);
-// print(prj, prj.crs(), prj.transform())
-pkg_export.ExportImgCol(imgcol_out, dateList, range, cellsize, type, folder, 
-    crs, prj.crsTransform);
+print(prj_albedo, prj_emiss)
+// pkg_export.ExportImgCol(imgcol_out.limit(10), dateList, range, cellsize, type, folder, 
+//     crs, prj.crsTransform);
 
 //////////////////////////// MAIN FUNCTIONS ////////////////////////////////////
 function get_chart(imgcol, name){
