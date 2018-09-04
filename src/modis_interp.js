@@ -52,7 +52,7 @@ var prj_emiss  = pkg_export.getProj(Emiss_d8); // prj_emiss.prj
 var dateList = ee.List(Emiss_d8.filter(filter_date2).aggregate_array('system:time_start'))
     .map(function(date){ return ee.Date(date).format('yyyy-MM-dd'); }).getInfo();
 /** common parameters */
-var type = 'albedo';
+var type = 'emiss';
 
 var imgcol_all, cellsize, folder, zipfun, prj;
 if (type === 'albedo'){
@@ -90,13 +90,15 @@ var imgcol_hisavg_d8    = pkg_trend.aggregate_prop(imgcol_all.select(0), 'dn', '
 
 
 var imgcol_his_d8 = pkg_smooth.historyInterp(imgcol_interp, imgcol_hisavg_d8   , 'dn');
-var imgcol_his_1m = pkg_smooth.historyInterp(imgcol_his_d8, imgcol_hisavg_month, 'month');
-var imgcol_his_1y = pkg_smooth.historyInterp(imgcol_his_1m, imgcol_hisavg_year , 'year');
+var imgcol_his_1m = pkg_smooth.historyInterp(imgcol_his_d8, imgcol_hisavg_month, 'Month');
+var imgcol_his_1y = pkg_smooth.historyInterp(imgcol_his_1m, imgcol_hisavg_year , 'Year');
 
+print(imgcol_all.limit(3));
 // print(imgcol, imgcol_interp);
-// print(imgcol_hisavg_d8, imgcol_hisavg_month, imgcol_hisavg_year);
+print(imgcol_hisavg_d8, imgcol_hisavg_month, imgcol_hisavg_year);
+print(imgcol_his_d8, imgcol_his_1m, imgcol_his_1y);
 
-get_chart(imgcol_all   , 'imgcol_all');
+get_chart(imgcol_all.filter(filter_date), 'imgcol_all');
 get_chart(imgcol_interp, 'imgcol_interp');
 get_chart(imgcol_his_1y, 'imgcol_his_1y');
 
