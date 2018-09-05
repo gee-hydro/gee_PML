@@ -12,7 +12,7 @@ var range = [-180, -60, 180, 90];
 var bound = ee.Geometry.Rectangle(range, 'EPSG:4326', false);
 
 var nday       = 32; // interpolation searching 32d in the left and right
-var year_begin = 2012,
+var year_begin = 2006,
     year_end   = year_begin + 5;
 
 var md_begin = (year_begin === 2002) ? '-07-04' : '-01-01';
@@ -133,7 +133,7 @@ var imgcol = Albedo_d8.map(function(img){
 // Map.addLayer(imgcol.limit(50), {}, 'Albedo_d8')
 
 folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/v012/Albedo_raw_8d';
-pkg_export.ExportImgCol(imgcol, dateList, range, cellsize, type, folder, 
+pkg_export.ExportImgCol(imgcol, dateList.slice(-2), range, cellsize, type, folder, 
     crs, prj_albedo.crsTransform);
 
 //////////////////////////// MAIN FUNCTIONS ////////////////////////////////////
