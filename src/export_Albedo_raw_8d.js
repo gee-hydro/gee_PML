@@ -11,8 +11,8 @@ var range = [-180, -60, 180, 90];
 var bound = ee.Geometry.Rectangle(range, 'EPSG:4326', false);
 
 var nday       = 32; // interpolation searching 32d in the left and right
-var year_begin = 2012,
-    year_end   = year_begin + 0;
+var year_begin = 2013,
+    year_end   = year_begin + 4;
 
 var md_begin = (year_begin === 2002) ? '-07-04' : '-01-01';
 var date_begin = ee.Date(year_begin.toString().concat(md_begin)).advance(-nday, 'day'),
@@ -52,7 +52,7 @@ var prj_emiss  = pkg_export.getProj(Emiss_d8); // prj_emiss.prj
 var dateList = ee.List(Emiss_d8.filter(filter_date2).aggregate_array('system:time_start'))
     .map(function(date){ return ee.Date(date).format('yyyy-MM-dd'); }).getInfo();
 /** common parameters */
-var type = 'emiss';
+var type = 'albedo';
 
 var imgcol_all, cellsize, folder, zipfun, prj;
 if (type === 'albedo'){
@@ -88,19 +88,18 @@ var imgcol_hisavg_d8    = pkg_trend.aggregate_prop(imgcol_all.select(0), 'dn', '
     imgcol_hisavg_month = pkg_trend.aggregate_prop(imgcol_all.select(0), 'Month', 'median'), //.map(zip_albedo),
     imgcol_hisavg_year  = pkg_trend.aggregate_prop(imgcol_all.select(0), 'Year', 'median'); //.map(zip_albedo);
 
-
 var imgcol_his_d8 = pkg_smooth.historyInterp(imgcol_interp, imgcol_hisavg_d8   , 'dn');
 var imgcol_his_1m = pkg_smooth.historyInterp(imgcol_his_d8, imgcol_hisavg_month, 'Month');
 var imgcol_his_1y = pkg_smooth.historyInterp(imgcol_his_1m, imgcol_hisavg_year , 'Year');
 
-print(imgcol_all.limit(3));
+// print(imgcol_all.limit(3));
 // print(imgcol, imgcol_interp);
-print(imgcol_hisavg_d8, imgcol_hisavg_month, imgcol_hisavg_year);
-print(imgcol_his_d8, imgcol_his_1m, imgcol_his_1y);
+// print(imgcol_hisavg_d8, imgcol_hisavg_month, imgcol_hisavg_year);
+// print(imgcol_his_d8, imgcol_his_1m, imgcol_his_1y);
 
-get_chart(imgcol_all.filter(filter_date), 'imgcol_all');
-get_chart(imgcol_interp, 'imgcol_interp');
-get_chart(imgcol_his_1y, 'imgcol_his_1y');
+// get_chart(imgcol_all.filter(filter_date), 'imgcol_all');
+// get_chart(imgcol_interp, 'imgcol_interp');
+// get_chart(imgcol_his_1y, 'imgcol_his_1y');
 
 // var imgcol_his_year  = pkg_smooth.historyInterp(imgcol_his_month, imgcol_hisavg_year , 'Year');
 // var imgcol_his    = historyInterp(imgcol_interp);
@@ -123,114 +122,10 @@ var range      = [-180, -60, 180, 90], // keep consistent with modis data range
 // print(imgcol_out.limit(2));
 // print(dateList);
 // pkg_export.ExportImgCol(emiss_interp, dateList, range, scale, drive, folder, crs);
-print(prj_albedo, prj_emiss)
+print('prjs', prj_albedo, prj_emiss)
 // pkg_export.ExportImgCol(imgcol_out.limit(10), dateList, range, cellsize, type, folder, 
 //     crs, prj.crsTransform);
 folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/v012/Albedo_raw_8d';
 pkg_export.ExportImgCol(Albedo_d8, dateList, range, cellsize, type, folder, 
-    crs, prj.crsTransform);
-//////////////////////////// MAIN FUNCTIONS ////////////////////////////////////
-function get_chart(imgcol, name){
-  var point = /* color: #d63000 */ee.Geometry.Point([-104.48822021484375, 65.42901140039487]);
+    crs, prj_albedo.crsTransform);
 
-  var chart = ui.Chart.image.series({
-      imageCollection: imgcol, //['ETsim', 'Es', 'Eca', 'Ecr', 'Es_eq']
-      region         : point,
-      reducer        : ee.Reducer.mean(),
-      scale          : 500
-  });
-  print(chart, name);
-}
-
-/** count images number */
-function count_imgcol(imgcol){
-    var img_count = imgcol.count();
-    // img_count = img_count.mask(img_count.lt(46));
-    return img_count;
-}
-
-// scale:0.002  offset:0.49
-function zip_emiss(img){
-    var x = img.expression('(b(0) - 0.49)*500');
-    return img.select('qc').addBands(x).toUint8();
-}
-
-// scale:0.001
-function zip_albedo(img){
-    var x = img.expression('b(0) * 1000').toUint16();
-    return img.select('qc').toUint8().addBands(x);
-}
-
-// print(albedo_interp);
-// var point = ee.Geometry.Point([-104.48822021484375, 65.42901140039487]);
-// var chart = ui.Chart.image.series({
-//         imageCollection: imgcol_out, //['ETsim', 'Es', 'Eca', 'Ecr', 'Es_eq']
-//         region         : point,
-//         reducer        : ee.Reducer.mean(),
-//         scale          : 500
-//     });
-// print(chart);
-
-// Map.centerObject(point, 16);
-// Map.addLayer(point     , {}, 'point');
-
-// Map.addLayer(imgcol_input, {}, 'imgcol_input');
-// Map.addLayer(Albedo_d8.limit(46), {}, 'Albedo_d8');
-// Map.addLayer(imgcol_his, {}, 'imgcol_his');
-
-// var count_mod = imgcol_gpp.count();
-// var count_v2  = imgcol_v2.count();
-
-// Map.addLayer(count_mod, {max:46, min:0}, 'count_mod');
-// Map.addLayer(count_v2, {max:46, min:0}, 'count_v2');
-// Map.addLayer(count_yearly(Albedo_d8), {max:46, min:0}, 'Albedo_d8 count');
-// Map.addLayer(Albedo_d8, {}, 'Albedo_d8');
-
-// Map.addLayer(count_yearly(Emiss_d8) , {max:46, min:0}, 'Emiss_d8 count');
-// Map.addLayer(Emiss_d8 , {}, 'Emiss_d8');
-
-// print(emiss_interp);
-
-// Map.addLayer(img_out, {}, 'img_out');
-// pkg_export.ExportImg_deg(img_out, range, task, scale, drive, folder, crs);
-
-// imgcol_gpp = imgcol_gpp.filter(ee.Filter.calendarRange(2010, 2010, 'year'));
-// imgcol_v2  = imgcol_v2.filter(ee.Filter.calendarRange(2010, 2010, 'year'));
-
-// print(imgcol_gpp);
-
-// var img  = ee.Image(Emiss_d8.first());
-// var mask = img.mask();
-// img = img.where(mask.not(), 999);
-// Map.addLayer(mask, {}, 'mask');
-// Map.addLayer(img , {}, 'img');
-
-// pkg_smooth.
-// print('imgcol', imgcol)
-
-// var imgcol_his_mean = pkg_trend.aggregate_prop(imgcol.select(0), prop, 'median');
-// print(emiss_interp, 'emiss_interp');
-
-// var count_his = count_yearly(imgcol_his.select([0]));
-// var count     = count_yearly(imgcol_interp.select([0]));
-// count = count_his;
-// Map.addLayer(count_his, {}, 'count_his');
-
-// Map.addLayer(imgcol_interp, {}, 'interp');
-// Map.addLayer(imgcol_his, {}, 'his');
-// Map.addLayer(count , {max:46, min:0}, 'Interp Emiss_d8 count');
-
-// var hist = count.reduceRegion({
-//     reducer: ee.Reducer.percentile({ percentiles: [1, 2, 10, 90, 98, 99], outputNames: null }),
-//     geometry: bound,
-//     scale: 25000,
-// });
-// var hist_es = ui.Chart.image.histogram({
-//         image: count,
-//         region: bound, //Tavg.geometry(),
-//         scale: 25000,
-//         // minBucketWidth: 0
-//     })
-//     .setOptions({ title: 'goal (mm)', vAxis: { title: 'ET (mm/d)' } });
-// print(hist);
-// print(hist_es);
