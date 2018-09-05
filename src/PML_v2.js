@@ -554,12 +554,12 @@ function PML(year, v2) {
     }
 
     /**
-     * Calculate yearly PML
+     * Calculate a period PML
      *
      * @param {ee.ImageCollection} INPUTS Multibands ImageCollection returned 
      * by PML_INPUTS_d8
      */
-    function PML_main(INPUTS){
+    function PML_period(INPUTS){
         var len = INPUTS.size();
         /** 2. ImgsRaw: ['Eeq', 'Evp', 'Es_eq', 'Eca', 'Ecr', 'Ei', 'Pi'] */
         var PML_ImgsRaw = INPUTS.map(PML_daily).sort("system:time_start");
@@ -593,11 +593,11 @@ function PML(year, v2) {
         /** Export ImgCol into asset */
         var save = true;
         if (save){
-            var range  = [-180, -60, 180, 90],
-            scale  = 1 / 240, //1/240,
-            drive  = false,
-            folder = asset,
-            crs = 'SR-ORG:6974'; //projects/pml_evapotranspiration
+            var range     = [-180, -60, 180, 90],
+                cellsize  = 1 / 240, //1/240,
+                type      = 'asset',
+                folder    = asset,
+                crs       = 'SR-ORG:6974'; //projects/pml_evapotranspiration
             // print('hello', PML_Imgs, dates);
             var img = ee.Image(PML_Imgs.first());
             // img = img.select(ee.List.sequence(0, 4)); //rm qc band
@@ -610,7 +610,7 @@ function PML(year, v2) {
             // print(PML_Imgs, dates);
             
             // export_image(img, '2002-07-05_v6');
-            pkg_export.ExportImgCol(PML_Imgs, dates, range, scale, drive, folder, crs);
+            pkg_export.ExportImgCol(PML_Imgs, dates, range, scale, type, folder, crs);
             // pkg_export.ExportImg_deg(img, range, '2002-07-05_v4', scale, drive, folder, crs)
         }else{
             print('PML_Imgs', PML_Imgs);    
@@ -621,37 +621,9 @@ function PML(year, v2) {
     var dates = ee.List(INPUTS.aggregate_array('system:time_start'))
         .map(function(date) { return ee.Date(date).format('yyyy-MM-dd'); }).getInfo(); //DATES of INPUT
     
-    var PML_Imgs = PML_year(INPUTS);
-    Export();
+    var PML_Imgs = PML_period(INPUTS);
+    // Export();
     return PML_Imgs;
-}
-
-function export_image(img, task){
-    // 1. try to Export to drive
-    var range  = [-180, -60, 180, 90];
-    var bounds = ee.Geometry.Rectangle(range, 'EPSG:4326', false);
-
-    var scale = 1/240,
-        // drive = true,
-        // folder = "PML_V2",
-        crs = 'SR-ORG:6974'; //SR-ORG:6974, EPSG:4326
-    var sizeX  = (range[2] - range[0]) / scale;
-    var sizeY  = (range[3] - range[1]) / scale;
-    var dimensions = sizeX.toString() + 'x' + sizeY.toString();
-    // var crs_trans  = [scale, 0, -180, 0, -scale, 90];
-    print(dimensions, crs_trans);
-    
-    var folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day';
-    Export.image.toAsset({
-        image: img,
-        description: task,
-        assetId: folder.concat('/').concat(task), //projects/pml_evapotranspiration/
-        crs: crs,
-        crsTransform: crs_trans,
-        // region: bounds,
-        dimensions: dimensions,
-        maxPixels: 1e13
-    });
 }
 
 var exec = true;
@@ -672,11 +644,14 @@ if (exec) {
         save  = true, //global param called in PML_main
         debug = true;
 
+    var imgcol_PML;
     if (debug) {
-        PML(year, PMLV2);
+        imgcol_PML = PML(year, PMLV2);
+        print('imgcol_PML', imgcol_PML)
     } else {
-        for (var year = year_begin; year <= year_end; year++)
-            PML(year, PMLV2);
+        for (var year = year_begin; year <= year_end; year++){
+            imgcol_PML = PML(year, PMLV2);
+        }
     }
 }
 
