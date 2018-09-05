@@ -428,16 +428,14 @@ function PML(year, v2) {
         // units convert: http://www.egc.com/useful_info_lighting.php
         
         var Gc, GPP;
-        // f_VPD = exp(-D0 * VPD.^2);
-        
-        var fvpd = VPD.expression('1/(1+b()/D0)', {D0:D0}); // leuning
-        var fvpd = VPD.expression('exp(-D0 * pow(b(), 2))', {D0:D0}); // yongqiang
+        // var fvpd = VPD.expression('1/(1+b()/D0)', {D0:D0});        // leuning
+        var fvpd = VPD.expression('exp(-D0 * pow(b(), 2))', {D0:D0}); // yongqiang, f_VPD = exp(-D0 * VPD.^2);
         
         if (v2){
             var PAR_mol = PAR.multiply(4.57);    // from [W m-2] to [umol m-2 s-1]
 
             /** G flux part */
-            var fT2 = Tavg.expression('exp(0.031*(b()-25))/(1 +exp(0.115*(b()-41)))').min(1.0);
+            var fT2 = Tavg.expression('exp(0.031*(b()-25))/(1 +exp(0.115*(b()-41)))').min(1.0).multiply(fvpd);
             var P1  = Am.multiply(Alpha).multiply(Thelta).multiply(PAR_mol),
                 P2  = Am.multiply(Alpha).multiply(PAR_mol),
                 P3  = Am.multiply(Thelta).multiply(Ca),
@@ -445,7 +443,7 @@ function PML(year, v2) {
             
             var Ags  = P1.expression('Ca*P1/(P2*kQ + P4*kQ) * (kQ*LAI + log((P2+P3+P4)/(P2+P3*exp(kQ*LAI) + P4)))*fT2', 
                 {Ca:Ca, P1:P1, P2:P2, P3:P3, P4:P4, kQ:kQ, LAI:LAI, fT2:fT2});  // umol cm-2 s-1
-            GPP  = Ags.multiply(1.0368).multiply(fvpd).rename('GPP'); //86400/1e6*12
+            GPP  = Ags.multiply(1.0368).rename('GPP'); //86400/1e6*12
             
             var img_check = GPP.addBands([rou_a, gama, slop, PAR, PAR_mol, fT2, P1, P2, P3, P4])
                 .rename(['gpp', 'rou_a', 'gama', 'slop', 'par', 'par_mol', 'fT2', 'p1', 'p2', 'p3', 'p4']);
@@ -561,7 +559,7 @@ function PML(year, v2) {
      * @param {ee.ImageCollection} INPUTS Multibands ImageCollection returned 
      * by PML_INPUTS_d8
      */
-    function PML_year(INPUTS){
+    function PML_main(INPUTS){
         var len = INPUTS.size();
         /** 2. ImgsRaw: ['Eeq', 'Evp', 'Es_eq', 'Eca', 'Ecr', 'Ei', 'Pi'] */
         var PML_ImgsRaw = INPUTS.map(PML_daily).sort("system:time_start");
