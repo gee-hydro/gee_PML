@@ -71,11 +71,7 @@ MODIS 005 IGBP land cover code
 
 var I_interp = true;
 var filter_date_all  = ee.Filter.date('2002-07-01', '2017-12-31');
-// var crs_trans = [463.3124742983412, 0, -20015098.88968834, 0, -463.31271656938463, 10007554.677898709]; //Interped LAI
-var crs_trans = [463.3127165279165, 0, -20015109.353988  , 0, -463.3127165274999 , 10007554.676994   ]; //origin LAI
 
-// var crs_trans     = [926.6249485966824, 0, -20015098.889688343, 0, -926.6254331387692, 10007554.677898707];
-    
 /** fix MCD12Q1_006 land cover code. */
 ImgCol_land = ImgCol_land.map(function(land){
     //for MCD12Q1_006 water and unc type is inverse
