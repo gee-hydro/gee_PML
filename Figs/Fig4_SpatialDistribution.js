@@ -1,14 +1,16 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var pml_v1_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly"),
-    pml_v2_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly"),
+    pml_v2_yearly_v011 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly"),
     img_lai = ee.Image("MODIS/006/MCD15A3H/2002_07_04"),
     pml_v1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day"),
-    pml_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day");
+    pml_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day"),
+    pml_v2_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /** 
  * Spatial distribution and ET component percentage
  * Dongdong Kong
  */
+var pkg_export = require('users/kongdd/public:pkg_export.js');
 var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
 var pkg_color = require('users/gena/packages:colorbrewer').Palettes;
 
@@ -73,22 +75,23 @@ var vis_per = { min: 0.0, max: 20 , palette: palette, bands: 'per'};
 
 var vis_per = { min: 0, max: 100 , palette: palette, bands: 'per'};
 
-// Map.addLayer(annual, vis_gpp, 'annual average GPP');
-// pkg_vis.grad_legend(vis_gpp, 'annual average GPP /n(gC m^-2 y^-1)', true);
+var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP', false); //(gC m^-2 y^-1)
+var lg_et   = pkg_vis.grad_legend(vis_et , 'ET' , false);
+var lg_wue  = pkg_vis.grad_legend(vis_wue, 'WUE', false);
+var lg_perc = pkg_vis.grad_legend(vis_per, 'percentage', false);
 
-// Map.addLayer(ET    , vis_et , 'annual average ET');
-// pkg_vis.grad_legend(vis_et, 'ET', 'ET', true);
-
+Map.addLayer(annual.select("GPP"), vis_gpp, 'annual average GPP');
+Map.addLayer(ET    , vis_et , 'annual average ET');
 // Map.addLayer(ET_v1, vis_et , 'annual average ET PML_v1');
 // pkg_vis.grad_legend(vis_et, 'ET', 'ET', true);
+Map.addLayer(WUE   , vis_wue, 'annual average WUE');
 
-// Map.addLayer(WUE   , vis_wue, 'annual average WUE');
-// grad_legend(vis_wue, 'annual average WUE', true);
 
 Map.addLayer(per_Ei   , vis_per, 'per_Ei');
 Map.addLayer(per_Es   , vis_per, 'per_Es');
 Map.addLayer(per_Ec   , vis_per, 'per_Ec');
-pkg_vis.grad_legend(vis_per, 'percentage', true);
+
+pkg_vis.add_lgds([lg_gpp, lg_et, lg_wue, lg_perc]);
 
 // 1. try to Export to drive
 var scale = 1/240,
@@ -112,43 +115,6 @@ function export_image(img, description){
       });  
 }
 
-function ExportImg_deg(Image, range, task, scale, drive, folder, crs, crs_trans){
-  var bounds; // define export region
-  
-  if (typeof range  === 'undefined') { range  = [-180, -70, 180, 90];}
-  if (typeof drive  === 'undefined') { drive  = false;}
-  if (typeof folder === 'undefined') { folder = ''; }
-  if (typeof crs    === 'undefined') { crs    = 'SR-ORG:6974';} //'EPSG:4326'
-  if (typeof crs_trans === 'undefined'){
-      bounds = ee.Geometry.Rectangle(range, 'EPSG:4326', false); //[xmin, ymin, xmax, ymax]
-  }
- 
-  var step   = scale; // degrees
-  var sizeX  = (range[2] - range[0]) / step;
-  var sizeY  = (range[3] - range[1]) / step;
-  var dimensions = sizeX.toString() + 'x' + sizeY.toString(); //[sizeX, ]
-  
-  // var crs_trans  = [scale, 0, -180, 0, -scale, 90];
-  var params = {
-      image        : Image,
-      description  : task,
-      crs          : crs,
-      crsTransform : crs_trans,
-      region       : bounds,
-      dimensions   : dimensions,
-      maxPixels    : 1e13
-  };
-         
-  if (drive){
-      params.folder         = folder;
-      params.skipEmptyTiles = true;
-      Export.image.toDrive(params);  
-  }else{
-      params.assetId = folder.concat('/').concat(task), //projects/pml_evapotranspiration/;
-      Export.image.toAsset(params);  
-  }
-  print(params);
-}
 
 // export_image(annaul_raw, 'PMLv2_Annual_average_raw');
 // export_image(annual, filename);
@@ -160,8 +126,8 @@ crs    = 'SR-ORG:6974';
 folder = '';
 
 scale = 1/12; drive = true;
-ExportImg_deg(annual1, range, 'PMLv1_Annual_average_'.concat(1/scale), scale, drive, folder, 'EPSG:4326');
-ExportImg_deg(annual2, range, 'PMLv2_Annual_average_'.concat(1/scale), scale, drive, folder, 'EPSG:4326');
+// pkg_export.ExportImg_deg(annual1, 'PMLv1_Annual_average_'.concat(1/scale), range, scale, drive, folder, 'EPSG:4326');
+// pkg_export.ExportImg_deg(annual2, 'PMLv2_Annual_average_'.concat(1/scale), range, scale, drive, folder, 'EPSG:4326');
 
 folder = 'projects/pml_evapotranspiration/PML/OUTPUT/MultiAnnualMean';
 // scale = 1/12; drive = false;
