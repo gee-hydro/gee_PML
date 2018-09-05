@@ -428,7 +428,10 @@ function PML(year, v2) {
         // units convert: http://www.egc.com/useful_info_lighting.php
         
         var Gc, GPP;
+        // f_VPD = exp(-D0 * VPD.^2);
+        
         var fvpd = VPD.expression('1/(1+b()/D0)', {D0:D0}); // leuning
+        var fvpd = VPD.expression('exp(-D0 * pow(b(), 2))', {D0:D0}); // yongqiang
         
         if (v2){
             var PAR_mol = PAR.multiply(4.57);    // from [W m-2] to [umol m-2 s-1]
