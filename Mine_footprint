@@ -1,6 +1,0 @@
-/**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var image = ee.Image("users/zhangyq/DLCD_v2-1_MODIS_EVI_2_20030101-20041231");
-/***** End of imports. If edited, may not auto-convert in the playground. *****/
-
-var img = image.mask(image.eq(1));
-Map.addLayer(img, {}, 'image');
