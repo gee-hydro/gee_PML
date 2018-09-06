@@ -4,7 +4,7 @@ var pml_v1_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTP
     img_lai = ee.Image("MODIS/006/MCD15A3H/2002_07_04"),
     pml_v1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day"),
     pml_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day"),
-    pml_v2_yearly_v012 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly");
+    pml_v2_yearly_v012 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_bilinear");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /** 
  * Spatial distribution and ET component percentage
@@ -12,7 +12,6 @@ var pml_v1_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTP
  */
 var pkg_export = require('users/kongdd/public:pkg_export.js');
 var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
-var pkg_color = require('users/gena/packages:colorbrewer').Palettes;
 
 var crs_trans = [463.3127165279165, 0, -20015109.353988  , 0, -463.3127165274999 , 10007554.676994   ]; //origin LAI
 // print(pml_v2_yearly, img_lai);
@@ -65,8 +64,8 @@ if (V2) {
     // var WUE = annual.expression('b("GPP") / b("Ec")').rename('WUE');    
 }
 
-var vis_et  = {min: 100, max: 1600 , palette:pkg_color.RdYlBu[11]},
-    vis_gpp = {min: 100, max: 3900 , palette:pkg_color.RdYlGn[11]};
+var vis_et  = {min: 100, max: 1600 , palette:pkg_vis.colors.RdYlBu[11]},
+    vis_gpp = {min: 100, max: 3700 , palette:pkg_vis.colors.RdYlGn[11]};
     
 /** visualization parameters for EVI */
 var palette = ['#570088', '#920057', '#CE0027', '#FF0A00', '#FF4500', '#FF8000', '#FFB100', '#FFD200', '#FFF200', '#C7EE03', '#70D209', '#18B80E', '#067F54', '#033FA9', '#0000FF'];
@@ -87,9 +86,9 @@ Map.addLayer(ET    , vis_et , 'annual average ET');
 Map.addLayer(WUE   , vis_wue, 'annual average WUE');
 
 
-Map.addLayer(per_Ei   , vis_per, 'per_Ei');
-Map.addLayer(per_Es   , vis_per, 'per_Es');
-Map.addLayer(per_Ec   , vis_per, 'per_Ec');
+// Map.addLayer(per_Ei   , vis_per, 'per_Ei');
+// Map.addLayer(per_Es   , vis_per, 'per_Es');
+// Map.addLayer(per_Ec   , vis_per, 'per_Ec');
 
 pkg_vis.add_lgds([lg_gpp, lg_et, lg_wue, lg_perc]);
 
@@ -132,6 +131,7 @@ var cellsize = 1/12,
 // folder = 'projects/pml_evapotranspiration/PML/OUTPUT/MultiAnnualMean';
 // scale = 1/12; drive = false;
 // ExportImg_deg(annual1, range, 'PMLv1_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
+
 pkg_export.ExportImg_deg(annual2, 'PMLv2_Annual_average_v012_'.concat(1/cellsize), 
     range, cellsize, type, folder, crs);
 
