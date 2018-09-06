@@ -105,6 +105,10 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
         // var date        = ee.Date.fromYMD(year, 1, 1);
         var filter_year = ee.Filter.calendarRange(year, year, 'year');
         var img  = imgcol.filter(filter_year).first();
+        
+        var mask = img.select('Ec').expression('b() >= 0 && b() < 5e3');
+        img = img.updateMask(mask);
+        
         var land = ImgCol_land.filter(filter_year).first();
         var task = prefix.concat(year);
         print(task, img);
@@ -117,9 +121,7 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
             reducer: reducer,
             geometry: bounds,
             scale:scale, maxPixels: 1e13, tileScale: 16 });
-        // print(f);
         
-        Map.addLayer(img, {}, task)
         f = ee.Feature(null, f).set("IGBP", -1); //-1 means global mean
         print(f);
         // 2. fs is grouped by IGBP
