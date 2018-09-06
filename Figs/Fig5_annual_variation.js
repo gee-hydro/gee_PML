@@ -13,10 +13,10 @@ var imgcol_year, bands, folder, prefix, years,
     
 if (V2){
     imgcol_year = pml_v2_yearly_v012;
-    bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
+    bands  = ['GPP', 'ET', 'Ec', 'Ei', 'Es']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
     folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly'; //
     prefix = 'PMLV2_IGBP_mean_';
-    years  = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2012, 2013]; 
+    years  = [2003]; 
 } else{
     imgcol_year = pml_v1_yearly_v011;
     bands  = ['ET'];//['Ec', 'Ei', 'Es', 'ET_water'];
@@ -43,7 +43,7 @@ imgcol_year = ee.ImageCollection(imgcol_year.toList(20, 0))
         var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename('ET'); // + b("ET_water")
         return img.addBands(ET);
     });
-print(imgcol_year);
+// print(imgcol_year);
     
 /** aggregated by IGBP */
 var IGBPcode     = ee.List.sequence(0, 17);
@@ -79,7 +79,7 @@ MOD16A2_yr = MOD16A2_yr.select(['ET', 'PET']).map(function(img){
 // var imgcol = d8ToYearly_mod(MOD16A2);
 // print(MOD16A2_yr);
 
-Map.addLayer(imgcol_year);
+// Map.addLayer(imgcol_year);
 // var img = ee.Image(imgcol.first());
 // print(img.geometry());
 // Map.addLayer(img)
@@ -90,11 +90,11 @@ Map.addLayer(imgcol_year);
 function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
     /** define reducer */
     // define reduction function (client-side), see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Reduce
-    // var combine = function(reducer, prev) { return reducer.combine(prev, null, true); };
-    // var reducers = [ ee.Reducer.mean(), ee.Reducer.count(), ee.Reducer.stdDev()];
-    var reducer = ee.Reducer.sum();
+    var combine = function(reducer, prev) { return reducer.combine(prev, null, true); };
+    var reducers = [ ee.Reducer.mean(), ee.Reducer.max(), ee.Reducer.count(), ee.Reducer.stdDev()];
+    // var reducer = ee.Reducer.sum();
     // print(reducers.slice(1), 'reducers.slice(1)');
-    // var reducer = reducers.slice(1).reduce(combine, reducers[0]);
+    var reducer = reducers.slice(1).reduce(combine, reducers[0]);
     // var reducer = ee.Reducer.mean().combine(ee.Reducer.count(), null, true);
     ////////////////////////////////////////////////////////////////////////////
     // print(imgcol, 'imgcol_check');
@@ -112,12 +112,14 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
         // var bands = ["ET", "GPP", "WUE"];
         // var bands = ['ET'];
         // 1. f is global mean
+        print(bounds, scale, bands)
         var f =  img.select(bands).reduceRegion({
             reducer: reducer,
             geometry: bounds,
             scale:scale, maxPixels: 1e13, tileScale: 16 });
         // print(f);
         
+        Map.addLayer(img, {}, task)
         f = ee.Feature(null, f).set("IGBP", -1); //-1 means global mean
         print(f);
         // 2. fs is grouped by IGBP
