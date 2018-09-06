@@ -4,7 +4,7 @@ var pml_v1_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTP
     img_lai = ee.Image("MODIS/006/MCD15A3H/2002_07_04"),
     pml_v1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day"),
     pml_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day"),
-    pml_v2_yearly_v012 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly");
+    pml_v2_yearly_v012 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_bilinear");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /** 
  * Spatial distribution and ET component percentage
@@ -75,7 +75,7 @@ var vis_per = { min: 0.0, max: 20 , palette: palette, bands: 'per'};
 
 var vis_per = { min: 0, max: 100 , palette: palette, bands: 'per'};
 
-var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP (gC m^-2 y^-1)', false); //
+var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP', false); //
 var lg_et   = pkg_vis.grad_legend(vis_et , 'ET' , false);
 var lg_wue  = pkg_vis.grad_legend(vis_wue, 'WUE', false);
 var lg_perc = pkg_vis.grad_legend(vis_per, 'percentage', false);
@@ -85,7 +85,7 @@ Map.addLayer(annual.select("GPP"), vis_gpp, 'annual average GPP');
 var maps = pkg_vis.layout(2);
 
 var labels = ['(a) Without spatial interpolation', //meteorological forcing 
-    '(b) bicubic interpolation'];
+    '(b) bilinear interpolation'];
 var imgcols = [pml_v2_yearly_v011, pml_v2_yearly_v012];
 
 var options = {
