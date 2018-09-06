@@ -672,10 +672,10 @@ if (exec) {
     }
 
     var year  = 2003,
-        year_begin = 2003, 
-        year_end   = 2010, //year_begin + 3,
+        year_begin = 2009, 
+        year_end   = 2014, //year_begin + 3,
         save  = true, //global param called in PML_main
-        debug = true;
+        debug = false;
 
     var imgcol_PML;
     if (debug) {
@@ -691,6 +691,10 @@ if (exec) {
         Map.addLayer(mask, {min:0, max:1, palette: ['white', 'red']}, 'mask');
         Map.addLayer(img_year, {}, 'img_year');
     } else {
+        // export parameter for yearly PML
+        var folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_bilinear';
+        var task;
+        
         for (var year = year_begin; year <= year_end; year++){
             imgcol_PML = PML(year, PMLV2);
         }
