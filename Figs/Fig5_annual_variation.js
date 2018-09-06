@@ -103,8 +103,8 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
     for (var year = year_begin; year <= year_end; year++){
         // var date        = ee.Date.fromYMD(year, 1, 1);
         var filter_year = ee.Filter.calendarRange(year, year, 'year');
-        var img  = ee.Image(imgcol.filter(filter_year).first());
-        var land = img.select('land');
+        var img  = imgcol.filter(filter_year).first();
+        var land = ImgCol_land.filter(filter_year).first();
         var task = prefix.concat(year);
         // print(task, img);
         
