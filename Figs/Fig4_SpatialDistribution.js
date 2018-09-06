@@ -36,9 +36,9 @@ var V2 = true;
 pml_v1_yearly = ee.ImageCollection(pml_v1_yearly.toList(20));
 pml_v2_yearly = ee.ImageCollection(pml_v2_yearly.toList(20));
 
-var annual1   = pml_v1_yearly.mean().select([0, 1, 2, 3, 4]).toFloat();
-var annual2   = pml_v2_yearly.mean().select([0, 1, 2, 3]).toFloat();
-// print(annual1)
+var annual1   = pml_v1_yearly.mean().select([0, 1, 2, 3]).toFloat();
+var annual2   = pml_v2_yearly.mean().select([0, 1, 2, 3, 4]).toFloat();
+print(annual1, annual2)
 
 if (V2) {
     annual   = pml_v2_yearly.mean();
@@ -52,7 +52,7 @@ if (V2) {
     filename = 'PMLv1_Annual_average_12th';
 }
 annual = annual.select(bands);
-print(annual);
+// print(annual);
 
 var ET     = annual.expression('b("Ec") + b("Es")+ b("Ei")').rename('ET'); //, b("ET_water")
 var per_Ei = annual.expression(' b("Ei") / ET * 100', {ET:ET}).rename('per');
@@ -121,18 +121,19 @@ function export_image(img, description){
 // export_image(annual1, 'PMLv1_Annual_average_240th');
 // export_image(annual2, 'PMLv2_Annual_average_240th');
 
-// var pkg_export = require('users/kongdd/public:pkg_export.js');
-crs    = 'SR-ORG:6974';
 folder = '';
+var cellsize = 1/12,
+    type = 'drive';
 
-scale = 1/12; drive = true;
 // pkg_export.ExportImg_deg(annual1, 'PMLv1_Annual_average_'.concat(1/scale), range, scale, drive, folder, 'EPSG:4326');
 // pkg_export.ExportImg_deg(annual2, 'PMLv2_Annual_average_'.concat(1/scale), range, scale, drive, folder, 'EPSG:4326');
 
-folder = 'projects/pml_evapotranspiration/PML/OUTPUT/MultiAnnualMean';
+// crs    = 'SR-ORG:6974';
+// folder = 'projects/pml_evapotranspiration/PML/OUTPUT/MultiAnnualMean';
 // scale = 1/12; drive = false;
 // ExportImg_deg(annual1, range, 'PMLv1_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
-// ExportImg_deg(annual2, range, 'PMLv2_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
+pkg_export.ExportImg_deg(annual2, 'PMLv2_Annual_average_v012_'.concat(1/cellsize), 
+    range, cellsize, type, folder, crs);
 
 // scale = 1/240; drive = false;
 // ExportImg_deg(annual1, range, 'PMLv1_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
