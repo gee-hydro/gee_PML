@@ -208,10 +208,13 @@ function PML_INPUTS_d8(begin_year, end_year){
         });    
     }
     
-    var gldas_input = ImgCol_gldas.filter(filter_date)
-        .map(function(img){
+    var gldas_input = ImgCol_gldas.filter(filter_date);
+    if (meth_interp === 'bilinear' || meth_intterp === 'bicubic'){
+        gldas_input = gldas_input.map(function(img){
             return img.resample(meth_interp).copyProperties(img, img.propertyNames());
         });
+    }
+    
     var pml_input   = pkg_join.InnerJoin(modis_input, gldas_input).sort("system:time_start");
     // Map.addLayer(pml_input, {}, 'pml_input');
     // Map.addLayer(modis_input, {}, 'modis_input');
@@ -675,7 +678,7 @@ if (exec) {
         year_begin = 2009, 
         year_end   = 2014, //year_begin + 3,
         save  = true, //global param called in PML_main
-        debug = false;
+        debug = true;
 
     var imgcol_PML;
     if (debug) {
@@ -688,8 +691,14 @@ if (exec) {
         // check outliers
         var img = imgcol_PML.first(); //img_year; //
         var mask = img.select('Ec').expression('b() > 1e5 || b() < 0');
-        Map.addLayer(mask, {min:0, max:1, palette: ['white', 'red']}, 'mask');
-        Map.addLayer(img_year, {}, 'img_year');
+        
+        var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
+        var vis_et  = {min: 100, max: 1600 , palette:pkg_vis.colors.RdYlBu[11]},
+            vis_gpp = {min: 100, max: 3900 , palette:pkg_vis.colors.RdYlGn[11]};
+        var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP', true); 
+        
+        // Map.addLayer(mask, {min:0, max:1, palette: ['white', 'red']}, 'mask');
+        Map.addLayer(img_year.select('GPP'), vis_gpp, 'img_year');
     } else {
         // export parameter for yearly PML
         var folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_bilinear';
