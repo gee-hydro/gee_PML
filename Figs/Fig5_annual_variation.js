@@ -9,14 +9,14 @@ var MOD16A2_105 = ee.ImageCollection("MODIS/NTSG/MOD16A2/105"),
     pml_v2_yearly_v012 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_bilinear");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var imgcol_year, bands, folder, prefix, years,  
-    V2 = true;
+    V2 = false;
     
 if (V2){
     imgcol_year = pml_v2_yearly_v012;
     bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
     folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly'; //
     prefix = 'PMLV2_IGBP_mean_';
-    years  = [2003, 2005, 2006, 2012, 2013, 2014, 2015]; 
+    years  = [2011, 2016, 2017]; 
 } else{
     imgcol_year = pml_v1_yearly_v011;
     bands  = ['ET'];//['Ec', 'Ei', 'Es', 'ET_water'];
@@ -99,15 +99,15 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
     ////////////////////////////////////////////////////////////////////////////
     // print(imgcol, 'imgcol_check');
     
-    for (var i in years){
-        var year = years[i];
-    // for (var year = year_begin; year <= year_end; year++){
+    // for (var i in years){
+    //     var year = years[i];
+    for (var year = year_begin; year <= year_end; year++){
         // var date        = ee.Date.fromYMD(year, 1, 1);
         var filter_year = ee.Filter.calendarRange(year, year, 'year');
         var img  = imgcol.filter(filter_year).first();
         
         var mask = img.select('ET').expression('b() >= 0 && b() < 5e3');
-        img = img.updateMask(mask);
+        // img = img.updateMask(mask);
         
         var land = ImgCol_land.filter(filter_year).first();
         var task = prefix.concat(year);
@@ -116,7 +116,7 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
         // var bands = ["ET", "GPP", "WUE"];
         // var bands = ['ET'];
         // 1. f is global mean
-        print(bounds, scale, bands)
+        // print(bounds, scale, bands)
         var f =  img.select(bands).reduceRegion({
             reducer: reducer,
             geometry: bounds,
