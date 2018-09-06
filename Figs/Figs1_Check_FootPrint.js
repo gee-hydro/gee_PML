@@ -108,6 +108,7 @@ maps.forEach(function(value, i) {
 });
 
 maps[0].setCenter(97.112, 24.074, 6);
+maps[0].add(lg_gpp);
 
 // Map.addLayer(ET    , vis_et , 'annual average ET');
 // Map.addLayer(ET_v1, vis_et , 'annual average ET PML_v1');
