@@ -107,6 +107,8 @@ maps.forEach(function(value, i) {
     map.widgets().set(3, ui.Label(labels[i], lab_style));
 });
 
+maps[0].setCenter(97.112, 24.074, 6);
+
 // Map.addLayer(ET    , vis_et , 'annual average ET');
 // Map.addLayer(ET_v1, vis_et , 'annual average ET PML_v1');
 // pkg_vis.grad_legend(vis_et, 'ET', 'ET', true);
