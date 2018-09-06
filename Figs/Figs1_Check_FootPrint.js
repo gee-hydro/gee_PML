@@ -99,7 +99,7 @@ maps.forEach(function(value, i) {
     var imgcol = imgcols[i];
     var img = imgcol.first().select('GPP');
     
-    var lab_style = {fontWeight:'bold', fontSize: 16};
+    var lab_style = {fontWeight:'bold', fontSize: 18};
     
     var map = maps[i];
     map.setControlVisibility(options);
