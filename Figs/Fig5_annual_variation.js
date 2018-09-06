@@ -2,24 +2,23 @@
 var MOD16A2_105 = ee.ImageCollection("MODIS/NTSG/MOD16A2/105"),
     MOD16A2_yr = ee.ImageCollection("projects/pml_evapotranspiration/MODIS/MOD16A2_yearly"),
     MOD17A2H_006 = ee.ImageCollection("MODIS/006/MOD17A2H"),
-    pml_v1_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly"),
-    pml_v2_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly"),
-    ImgCol_land = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/MCD12Q1_006"),
+    pml_v1_yearly_v011 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly"),
+    pml_v2_yearly_v011 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly"),
     MOD16A2_006 = ee.ImageCollection("MODIS/006/MOD16A2"),
-    pml_v2_yearly2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/TEMP/PML_V2_yearly"),
-    pml_v1_yearly2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/TEMP/PML_V1_yearly");
+    ImgCol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
+    pml_v2_yearly_v012 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var imgcol_year, bands, folder, prefix, years,  
     V2 = true;
     
 if (V2){
-    imgcol_year = pml_v2_yearly;
+    imgcol_year = pml_v2_yearly_v012;
     bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
     folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly'; //
     prefix = 'PMLV2_IGBP_mean_';
     years  = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2012, 2013]; 
 } else{
-    imgcol_year = pml_v1_yearly2;
+    imgcol_year = pml_v1_yearly_v011;
     bands  = ['ET'];//['Ec', 'Ei', 'Es', 'ET_water'];
     folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly'; //
     prefix = 'PMLV1_IGBP_mean_';
@@ -54,7 +53,7 @@ var IGBPname_all = ["UNC", "ENF", "EBF", "DNF", "DBF", "MF",
 // var IGBPname = ee.List(IGBPname_all).slice(1, IGBPcode.length().add(1)); //ignore `UNC`
 
 /** fix MCD12Q1_006 land cover code. */
-ImgCol_land = ImgCol_land.map(function(land){
+ImgCol_land = ImgCol_land.select(0).map(function(land){
     //for MCD12Q1_006 water and unc type is inverse
     land = land.remap([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], 
         [17, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0]); 
