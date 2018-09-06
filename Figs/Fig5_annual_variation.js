@@ -6,7 +6,7 @@ var MOD16A2_105 = ee.ImageCollection("MODIS/NTSG/MOD16A2/105"),
     pml_v2_yearly_v011 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly"),
     MOD16A2_006 = ee.ImageCollection("MODIS/006/MOD16A2"),
     ImgCol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
-    pml_v2_yearly_v012 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly");
+    pml_v2_yearly_v012 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_bilinear");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var imgcol_year, bands, folder, prefix, years,  
     V2 = true;
@@ -16,7 +16,7 @@ if (V2){
     bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
     folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly'; //
     prefix = 'PMLV2_IGBP_mean_';
-    years  = [2003]; 
+    years  = [2003, 2005, 2006, 2012, 2013, 2014, 2015]; 
 } else{
     imgcol_year = pml_v1_yearly_v011;
     bands  = ['ET'];//['Ec', 'Ei', 'Es', 'ET_water'];
@@ -111,7 +111,7 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
         
         var land = ImgCol_land.filter(filter_year).first();
         var task = prefix.concat(year);
-        print(task, img);
+        // print(task, img);
         
         // var bands = ["ET", "GPP", "WUE"];
         // var bands = ['ET'];
