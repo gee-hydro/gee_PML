@@ -13,7 +13,7 @@ var imgcol_year, bands, folder, prefix, years,
     
 if (V2){
     imgcol_year = pml_v2_yearly_v012;
-    bands  = ['GPP', 'ET', 'Ec', 'Ei', 'Es']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
+    bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
     folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly'; //
     prefix = 'PMLV2_IGBP_mean_';
     years  = [2003]; 
@@ -31,7 +31,7 @@ print(years);
 /** GLOBAL PARAMETERS */
 var range  = [-180, -60, 180, 90],
     bounds = ee.Geometry.Rectangle(range, 'EPSG:4326', false), //[xmin, ymin, xmax, ymax]
-    scale  = 1e3*5,
+    scale  = 1e3,
     year_begin = 2003,
     year_end   = 2017;
     
@@ -91,7 +91,7 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
     /** define reducer */
     // define reduction function (client-side), see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Reduce
     var combine = function(reducer, prev) { return reducer.combine(prev, null, true); };
-    var reducers = [ ee.Reducer.mean(), ee.Reducer.max(), ee.Reducer.count(), ee.Reducer.stdDev()];
+    var reducers = [ ee.Reducer.mean(), ee.Reducer.count(), ee.Reducer.stdDev()];
     // var reducer = ee.Reducer.sum();
     // print(reducers.slice(1), 'reducers.slice(1)');
     var reducer = reducers.slice(1).reduce(combine, reducers[0]);
@@ -106,7 +106,7 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
         var filter_year = ee.Filter.calendarRange(year, year, 'year');
         var img  = imgcol.filter(filter_year).first();
         
-        var mask = img.select('Ec').expression('b() >= 0 && b() < 5e3');
+        var mask = img.select('ET').expression('b() >= 0 && b() < 5e3');
         img = img.updateMask(mask);
         
         var land = ImgCol_land.filter(filter_year).first();
@@ -140,9 +140,9 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
                 // .set('system:id', code.format('%02d'));
             return value;
         });
-        print(fs, 'fs');
+        // print(fs, 'fs');
         // var x  = ee.FeatureCollection(fs.add(f));
-        var x  = ee.FeatureCollection(fs);
+        var x  = ee.FeatureCollection(f); //fs
         // print(x);
         Export.table.toDrive({
             collection: x, 
