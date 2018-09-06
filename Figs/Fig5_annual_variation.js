@@ -31,7 +31,7 @@ print(years);
 /** GLOBAL PARAMETERS */
 var range  = [-180, -60, 180, 90],
     bounds = ee.Geometry.Rectangle(range, 'EPSG:4326', false), //[xmin, ymin, xmax, ymax]
-    scale  = 1e3,
+    scale  = 1e3*5,
     year_begin = 2003,
     year_end   = 2017;
     
@@ -79,6 +79,7 @@ MOD16A2_yr = MOD16A2_yr.select(['ET', 'PET']).map(function(img){
 // var imgcol = d8ToYearly_mod(MOD16A2);
 // print(MOD16A2_yr);
 
+Map.addLayer(imgcol_year);
 // var img = ee.Image(imgcol.first());
 // print(img.geometry());
 // Map.addLayer(img)
@@ -98,15 +99,15 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
     ////////////////////////////////////////////////////////////////////////////
     // print(imgcol, 'imgcol_check');
     
-    // for (var i in years){
-    //     var year = years[i];
-    for (var year = year_begin; year <= year_end; year++){
+    for (var i in years){
+        var year = years[i];
+    // for (var year = year_begin; year <= year_end; year++){
         // var date        = ee.Date.fromYMD(year, 1, 1);
         var filter_year = ee.Filter.calendarRange(year, year, 'year');
         var img  = imgcol.filter(filter_year).first();
         var land = ImgCol_land.filter(filter_year).first();
         var task = prefix.concat(year);
-        // print(task, img);
+        print(task, img);
         
         // var bands = ["ET", "GPP", "WUE"];
         // var bands = ['ET'];
@@ -118,7 +119,7 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
         // print(f);
         
         f = ee.Feature(null, f).set("IGBP", -1); //-1 means global mean
-        // print(f);
+        print(f);
         // 2. fs is grouped by IGBP
         var fs = IGBPcode.map(function(code){
             code = ee.Number(code);
@@ -135,7 +136,7 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
                 // .set('system:id', code.format('%02d'));
             return value;
         });
-        // print(fs, 'fs');
+        print(fs, 'fs');
         // var x  = ee.FeatureCollection(fs.add(f));
         var x  = ee.FeatureCollection(fs);
         // print(x);
