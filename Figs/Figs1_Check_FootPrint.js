@@ -75,7 +75,7 @@ var vis_per = { min: 0.0, max: 20 , palette: palette, bands: 'per'};
 
 var vis_per = { min: 0, max: 100 , palette: palette, bands: 'per'};
 
-var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP', false); //(gC m^-2 y^-1)
+var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP (gC m^-2 y^-1)', false); //
 var lg_et   = pkg_vis.grad_legend(vis_et , 'ET' , false);
 var lg_wue  = pkg_vis.grad_legend(vis_wue, 'WUE', false);
 var lg_perc = pkg_vis.grad_legend(vis_per, 'percentage', false);
