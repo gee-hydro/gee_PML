@@ -742,15 +742,15 @@ if (exec) {
         // var mask = img.select('Ec').expression('b() > 1e5 || b() < 0');
         
         var imgcol_year = years.map(function(year){
-        var imgcol_PML = PML(year, is_PMLV2);
-        
-        var begin_date = ee.Date.fromYMD(year,1,1);
-        // var task = begin_date.format('YYYY-MM-dd').getInfo();
-        var ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
-        
-        var img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
-                    .set('system:time_start', begin_date.millis())
-                    .set('system:id', task);
+            var imgcol_PML = PML(year, is_PMLV2);
+            
+            var begin_date = ee.Date.fromYMD(year,1,1);
+            var task = begin_date.format('YYYY-MM-dd'); //.getInfo();
+            var ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
+            
+            var img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
+                .set('system:time_start', begin_date.millis())
+                .set('system:id', task);
             return img_year;
         });
         
