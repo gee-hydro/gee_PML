@@ -409,6 +409,7 @@ function PML(year, v2) {
     // fix landcover time range after 2013, 2014-2016
     year          = ee.Number(year);
     var year_land = ee.Algorithms.If(year.gt(2016), 2016, ee.Algorithms.If(year.lt(2001), 2001, year));
+  year_land = ee.Number(year_land);
 
     var filter_date_land = ee.Filter.calendarRange(year_land, year_land, 'year');
     var land = ee.Image(ImgCol_land.filter(filter_date_land).first()); //land_raw was MODIS/051/MCD12Q1
@@ -729,7 +730,7 @@ if (exec) {
     var years = ee.List.sequence(2003, 2017);
     
     if (debug) {
-        year = ee.Number(year);
+        // year = ee.Number(year);
         begin_date = ee.Date.fromYMD(year,1,1);
         ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
         
