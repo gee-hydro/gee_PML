@@ -175,7 +175,7 @@ function PML_INPUTS_d8(begin_year, end_year){
     
     var begin_yearStr = begin_year.format('%d'), 
         end_yearStr   = end_year.format('%d');
-    var date_begin = ee.Date(ee.Algorithms.If(begin_year.eq(2002),
+    var date_begin = ee.Date(ee.Algorithms.If(begin_year.eq(ee.Number(2002)),
             begin_yearStr.cat("-07-01"), begin_yearStr.cat("-01-01"))),
         date_end    = ee.Date(end_yearStr.cat("-12-31"));
     var filter_date = ee.Filter.date(date_begin, date_end);
@@ -398,19 +398,21 @@ function vapor_pressure(t) {
  *     -- PML_year(INPUTS)
  *     
  * @param {Integer} year Used to filter landcover data and set landcover depend parameters.
- * @param {boolean} v2 Default is true, and PML_V2 will be used. If false, 
+ * @param {boolean} is_PMLV2 Default is true, and PML_V2 will be used. If false, 
  *                     PML_V1 will be used.
  * 
  * @return {ee.ImageCollection} An ImageCollection with the bands of 
  *                                 ['GPP', 'Ec', 'Es', 'Ei', 'ET_water','qc'] for PML_V2;
  *                                 ['Ec', 'Es', 'Ei', 'ET_water','qc'] for PML_V1;
  */
-function PML(year, v2) {
+function PML(year, is_PMLV2) {
     // fix landcover time range after 2013, 2014-2016
-    year          = ee.Number(year);
-    var year_land = ee.Algorithms.If(year.gt(2016), 2016, ee.Algorithms.If(year.lt(2001), 2001, year));
-  year_land = ee.Number(year_land);
-
+    year         = ee.Number(year);
+    var year_max = 2016, 
+        year_min = 2001;
+    var year_land = ee.Algorithms.If(year.gt(year_max), year_max, 
+            ee.Algorithms.If(year.lt(year_min), year_min, year));
+  
     var filter_date_land = ee.Filter.calendarRange(year_land, year_land, 'year');
     var land = ee.Image(ImgCol_land.filter(filter_date_land).first()); //land_raw was MODIS/051/MCD12Q1
     
@@ -424,7 +426,7 @@ function PML(year, v2) {
     var gsx     = propertyByLand_v2(land, gsx_raw),    //only for PML_v1
         hc      = propertyByLand_v2(land, hc_raw);
         
-    if (v2){
+    if (is_PMLV2){
         var Alpha   = propertyByLand_v2(land, Alpha_raw),
             Thelta  = propertyByLand_v2(land, Thelta_raw),
             m       = propertyByLand_v2(land, m_raw),
@@ -454,6 +456,7 @@ function PML(year, v2) {
         var Ca     = img.select('co2');   //umol mol-1
         var q      = img.select('q');     // kg/kg;
         var p      = img.select('Pa');    // kPa
+        var u2     = img.select('U2');    // m/s
         
         var Tmax   = img.select('Tmax');  // degC
         var Tmin   = img.select('Tmin');  // degC
@@ -465,7 +468,6 @@ function PML(year, v2) {
         var albedo = img.select('Albedo');// %
         var emiss  = img.select('Emiss'); // %
         var LAI    = img.select('LAI');   // 0 - 
-        var u2     = img.select('U2');    // m/s
         
         var lambda = 2500; // latent heat of vaporization, 2500 [J g-1]  at 25 degC
         lambda     = Tavg.multiply(-2.2).add(lambda);
@@ -509,12 +511,11 @@ function PML(year, v2) {
 
             /** G flux part */
             var fT2 = Tavg.expression('exp(0.031*(b()-25))/(1 +exp(0.115*(b()-41)))').min(1.0).multiply(fvpd);
-            Am = Am.multiply(fT2);
             
             var P1  = Am.multiply(Alpha).multiply(Thelta).multiply(PAR_mol),
                 P2  = Am.multiply(Alpha).multiply(PAR_mol),
                 P3  = Am.multiply(Thelta).multiply(Ca),
-                P4  = Alpha.multiply(Thelta).multiply(PAR_mol).multiply(Ca);
+                P4  = Alpha.multiply(Thelta).multiply(PAR_mol).multiply(Ca).divide(fT2);
             
             var Ags  = P1.expression('Ca*P1/(P2*kQ + P4*kQ) * (kQ*LAI + log((P2+P3+P4)/(P2+P3*exp(kQ*LAI) + P4)))', //*fT2
                 {Ca:Ca, P1:P1, P2:P2, P3:P3, P4:P4, kQ:kQ, LAI:LAI, fT2:fT2});  // umol cm-2 s-1
@@ -613,7 +614,7 @@ function PML(year, v2) {
         // var newBands = ['ETsim', 'Es', 'Eca', 'Ecr', 'Ei', 'Eeq', 'Evp', 'Es_eq'];
         var newBands = ['Es_eq', 'Ec', 'Ei', 'Pi']; //'Eeq', 'Evp', 'ETsim', 'Es'
         var newImg = ee.Image([Es_eq, Ec, Ei, Pi]).rename(newBands);
-        if (v2) newImg = newImg.addBands(GPP); //PML_V2
+        if (is_PMLV2) newImg = newImg.addBands(GPP); //PML_V2
         
         newImg = newImg.updateMask(mask_water.not()).addBands(ET_water); //add ET_water
         // Comment 2018-09-05, to get yearly sum, it can be converted to uint16
@@ -692,7 +693,7 @@ function PML(year, v2) {
     var INPUTS = PML_INPUTS_d8(year);
     // Map.addLayer(INPUTS, {}, 'INPUT');
     var dates = ee.List(INPUTS.aggregate_array('system:time_start'))
-        .map(function(date) { return ee.Date(date).format('yyyy-MM-dd'); }).getInfo(); //DATES of INPUT
+        .map(function(date) { return ee.Date(date).format('yyyy-MM-dd'); }); //.getInfo(); //DATES of INPUT
     
     var PML_Imgs = PML_period(INPUTS);
     // Export();
@@ -734,16 +735,19 @@ if (exec) {
         begin_date = ee.Date.fromYMD(year,1,1);
         ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
         
+        print(begin_date, ydays, year)
+        
         imgcol_PML = PML(year, is_PMLV2);
         img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
             .set('system:time_start', begin_date.millis())
             .set('system:id', begin_date.format('YYYY-MM-dd'));
         
+        print(imgcol_PML)
         // print('imgcol_PML', ydays, imgcol_PML, img_year);
         // check outliers
         var img = imgcol_PML.first(); //img_year; //
         var mask = img.select('Ec').expression('b() > 1e5 || b() < 0');
-        Map.addLayer(img_year.select('GPP'), vis_gpp, 'img_year');
+        // Map.addLayer(img_year.select('GPP'), vis_gpp, 'img_year');
         
         // var imgcol_year = years.map(function(year){
         //     year = ee.Number(year);
