@@ -370,11 +370,12 @@ var hc_raw = ee.List([0.01, 10, 10, 10, 10, 10,
  * @return {ee.Image}           [description]
  */
 function propertyByLand_v2(landcover, list) {
+    landcover = ee.Image(landcover);
     // modis landcover 18 types
     var lands = ee.List.sequence(0, 17).map(function(i) {
         i = ee.Number(i);
-        var land = ee.Image(landcover).eq(ee.Image(i)).float();
-        var prop = ee.Image(ee.Number(list.get(i)));
+        var land = landcover.eq(i).float();
+        var prop = ee.Number(list.get(i));
         return land.multiply(prop);
     });
     return ee.ImageCollection(lands).sum();
@@ -728,33 +729,36 @@ if (exec) {
     var years = ee.List.sequence(2003, 2017);
     
     if (debug) {
-        // begin_date = ee.Date.fromYMD(year,1,1);
-        // ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
+        year = ee.Number(year);
+        begin_date = ee.Date.fromYMD(year,1,1);
+        ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
         
-        // imgcol_PML = PML(year, is_PMLV2);
-        // img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
-        //     .set('system:time_start', begin_date.millis())
-        //     .set('system:id', begin_date.format('YYYY-MM-dd'));
+        imgcol_PML = PML(year, is_PMLV2);
+        img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
+            .set('system:time_start', begin_date.millis())
+            .set('system:id', begin_date.format('YYYY-MM-dd'));
         
-        // // print('imgcol_PML', ydays, imgcol_PML, img_year);
-        // // check outliers
-        // var img = imgcol_PML.first(); //img_year; //
-        // var mask = img.select('Ec').expression('b() > 1e5 || b() < 0');
+        // print('imgcol_PML', ydays, imgcol_PML, img_year);
+        // check outliers
+        var img = imgcol_PML.first(); //img_year; //
+        var mask = img.select('Ec').expression('b() > 1e5 || b() < 0');
+        Map.addLayer(img_year.select('GPP'), vis_gpp, 'img_year');
         
-        var imgcol_year = years.map(function(year){
-            var imgcol_PML = PML(year, is_PMLV2);
+        // var imgcol_year = years.map(function(year){
+        //     year = ee.Number(year);
+        //     var imgcol_PML = PML(year, is_PMLV2);
             
-            var begin_date = ee.Date.fromYMD(year,1,1);
-            var task = begin_date.format('YYYY-MM-dd'); //.getInfo();
-            var ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
+        //     var begin_date = ee.Date.fromYMD(year,1,1);
+        //     var task = begin_date.format('YYYY-MM-dd'); //.getInfo();
+        //     var ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
             
-            var img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
-                .set('system:time_start', begin_date.millis())
-                .set('system:id', task);
-            return img_year;
-        });
+        //     var img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
+        //         // .set('system:time_start', begin_date.millis())
+        //         // .set('system:id', task);
+        //     return img_year;
+        // });
         
-        print(imgcol_year);
+        // print(imgcol_year);
         
         var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
         var vis_et  = {min: 100, max: 1600 , palette:pkg_vis.colors.RdYlBu[11]},
@@ -762,7 +766,7 @@ if (exec) {
         var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP', true); 
         
         // Map.addLayer(mask, {min:0, max:1, palette: ['white', 'red']}, 'mask');
-        // Map.addLayer(img_year.select('GPP'), vis_gpp, 'img_year');
+        
     } else {
         // export parameter for yearly PML
         var folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_bilinear';
