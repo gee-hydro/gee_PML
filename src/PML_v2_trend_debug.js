@@ -293,34 +293,63 @@ set:
 // 		0.051, 0.010, 0.051, 0.000, 0.010, 0.000]);
 		
 //  Update 05 Sep, 2018; kongdd
-var Alpha_raw = ee.List([0.000, 0.060, 0.084, 0.060, 0.057, 0.060,
-		0.029, 0.029, 0.065, 0.035, 0.060, 0.032,
-		0.032, 0.060, 0.032, 0.000, 0.060, 0.000]);
-var Thelta_raw = ee.List([0.000, 0.042, 0.030, 0.042, 0.028, 0.040,
-		0.063, 0.063, 0.041, 0.049, 0.040, 0.069,
-		0.069, 0.040, 0.069, 0.000, 0.040, 0.000]);
-var m_raw = ee.List([0.000, 2.659, 3.840, 2.659, 4.492, 3.562,
-		2.000, 2.000, 3.000, 3.395, 2.289, 17.238,
-		3.312, 3.562, 3.312, 0.000, 2.289, 0.000]);
-var Am_25_raw = ee.List([0.000, 120.000, 21.395, 120.000, 18.480, 70.918,
-		72.802, 72.802, 34.500, 53.141, 80.113, 18.482,
-		97.662, 70.918, 97.662, 0.000, 80.113, 0.000]);
-var D0_raw = ee.List([0.200, 0.243, 0.273, 0.243, 0.340, 0.535,
-		0.152, 0.152, 0.338, 0.230, 0.368, 0.102,
-		0.215, 0.535, 0.215, 0.200, 0.368, 0.200]);
-var kQ_raw = ee.List([0.600, 1.000, 0.976, 1.000, 0.613, 0.836,
-		0.730, 0.730, 0.923, 1.000, 0.834, 0.625,
-		0.101, 0.836, 0.101, 0.600, 0.834, 0.600]);
-var kA_raw = ee.List([0.700, 0.753, 0.501, 0.753, 0.899, 0.669,
+// var Alpha_raw = ee.List([0.000, 0.060, 0.084, 0.060, 0.057, 0.060,
+// 		0.029, 0.029, 0.065, 0.035, 0.060, 0.032,
+// 		0.032, 0.060, 0.032, 0.000, 0.060, 0.000]);
+// var Thelta_raw = ee.List([0.000, 0.042, 0.030, 0.042, 0.028, 0.040,
+// 		0.063, 0.063, 0.041, 0.049, 0.040, 0.069,
+// 		0.069, 0.040, 0.069, 0.000, 0.040, 0.000]);
+// var m_raw = ee.List([0.000, 2.659, 3.840, 2.659, 4.492, 3.562,
+// 		2.000, 2.000, 3.000, 3.395, 2.289, 17.238,
+// 		3.312, 3.562, 3.312, 0.000, 2.289, 0.000]);
+// var Am_25_raw = ee.List([0.000, 120.000, 21.395, 120.000, 18.480, 70.918,
+// 		72.802, 72.802, 34.500, 53.141, 80.113, 18.482,
+// 		97.662, 70.918, 97.662, 0.000, 80.113, 0.000]);
+// var D0_raw = ee.List([0.200, 0.243, 0.273, 0.243, 0.340, 0.535,
+// 		0.152, 0.152, 0.338, 0.230, 0.368, 0.102,
+// 		0.215, 0.535, 0.215, 0.200, 0.368, 0.200]);
+// var kQ_raw = ee.List([0.600, 1.000, 0.976, 1.000, 0.613, 0.836,
+// 		0.730, 0.730, 0.923, 1.000, 0.834, 0.625,
+// 		0.101, 0.836, 0.101, 0.600, 0.834, 0.600]);
+// var kA_raw = ee.List([0.700, 0.753, 0.501, 0.753, 0.899, 0.669,
+// 		0.899, 0.899, 0.770, 0.899, 0.899, 0.899,
+// 		0.899, 0.669, 0.899, 0.700, 0.899, 0.700]);
+// var S_sls_raw = ee.List([0.000, 0.243, 0.147, 0.243, 0.108, 0.170,
+// 		0.030, 0.030, 0.212, 0.147, 0.179, 0.010,
+// 		0.151, 0.170, 0.151, 0.000, 0.179, 0.000]);
+// var fER0_raw = ee.List([0.000, 0.045, 0.080, 0.045, 0.031, 0.010,
+// 		0.010, 0.010, 0.115, 0.049, 0.029, 0.010,
+// 		0.141, 0.010, 0.141, 0.000, 0.029, 0.000]);
+
+var Alpha_raw = ee.List([0.000, 0.041, 0.054, 0.041, 0.038, 0.052,
+		0.041, 0.041, 0.041, 0.027, 0.041, 0.023,
+		0.022, 0.052, 0.022, 0.000, 0.041, 0.000]);
+var Thelta_raw = ee.List([0.000, 0.069, 0.027, 0.069, 0.022, 0.067,
+		0.069, 0.069, 0.069, 0.070, 0.070, 0.060,
+		0.069, 0.067, 0.069, 0.000, 0.070, 0.000]);
+var m_raw = ee.List([0.000, 2.602, 3.703, 2.602, 4.477, 3.391,
+		2.000, 2.000, 2.938, 3.391, 2.242, 17.174,
+		3.396, 3.391, 3.396, 0.000, 2.242, 0.000]);
+var Am_25_raw = ee.List([0.000, 14.342, 13.719, 14.342, 11.617, 10.477,
+		13.731, 13.731, 12.375, 16.938, 16.529, 15.259,
+		41.252, 10.477, 41.252, 0.000, 16.529, 0.000]);
+var D0_raw = ee.List([0.200, 0.271, 0.461, 0.271, 0.559, 0.719,
+		0.207, 0.207, 0.418, 0.373, 0.479, 0.102,
+		0.459, 0.719, 0.459, 0.200, 0.479, 0.200]);
+var kQ_raw = ee.List([0.600, 0.910, 0.871, 0.910, 0.550, 0.753,
+		1.000, 1.000, 0.816, 1.000, 0.822, 0.619,
+		0.100, 0.753, 0.100, 0.600, 0.822, 0.600]);
+var kA_raw = ee.List([0.700, 0.716, 0.501, 0.716, 0.899, 0.567,
 		0.899, 0.899, 0.770, 0.899, 0.899, 0.899,
-		0.899, 0.669, 0.899, 0.700, 0.899, 0.700]);
-var S_sls_raw = ee.List([0.000, 0.243, 0.147, 0.243, 0.108, 0.170,
-		0.030, 0.030, 0.212, 0.147, 0.179, 0.010,
-		0.151, 0.170, 0.151, 0.000, 0.179, 0.000]);
-var fER0_raw = ee.List([0.000, 0.045, 0.080, 0.045, 0.031, 0.010,
-		0.010, 0.010, 0.115, 0.049, 0.029, 0.010,
-		0.141, 0.010, 0.141, 0.000, 0.029, 0.000]);
-		
+		0.899, 0.567, 0.899, 0.700, 0.899, 0.700]);
+var S_sls_raw = ee.List([0.000, 0.250, 0.155, 0.250, 0.108, 0.163,
+		0.035, 0.035, 0.225, 0.158, 0.184, 0.010,
+		0.142, 0.163, 0.142, 0.000, 0.184, 0.000]);
+var fER0_raw = ee.List([0.000, 0.039, 0.088, 0.039, 0.035, 0.010,
+		0.010, 0.010, 0.111, 0.059, 0.032, 0.010,
+		0.155, 0.010, 0.155, 0.000, 0.032, 0.000]);
+
+
 /** LAIref (reference leaf area index), setting as 5 */
 /** Maximum stomtal conductance in a unite m/s, make sure Ga/Gc ~= 0 */
 var gsx_raw = ee.List([50.00, 3.2, 3.8, 3.2, 4.3, 3.1, 
@@ -478,12 +507,14 @@ function PML(year, v2) {
 
             /** G flux part */
             var fT2 = Tavg.expression('exp(0.031*(b()-25))/(1 +exp(0.115*(b()-41)))').min(1.0).multiply(fvpd);
+            Am = Am.multiply(fT2);
+            
             var P1  = Am.multiply(Alpha).multiply(Thelta).multiply(PAR_mol),
                 P2  = Am.multiply(Alpha).multiply(PAR_mol),
                 P3  = Am.multiply(Thelta).multiply(Ca),
                 P4  = Alpha.multiply(Thelta).multiply(PAR_mol).multiply(Ca);
             
-            var Ags  = P1.expression('Ca*P1/(P2*kQ + P4*kQ) * (kQ*LAI + log((P2+P3+P4)/(P2+P3*exp(kQ*LAI) + P4)))*fT2', 
+            var Ags  = P1.expression('Ca*P1/(P2*kQ + P4*kQ) * (kQ*LAI + log((P2+P3+P4)/(P2+P3*exp(kQ*LAI) + P4)))', //*fT2
                 {Ca:Ca, P1:P1, P2:P2, P3:P3, P4:P4, kQ:kQ, LAI:LAI, fT2:fT2});  // umol cm-2 s-1
             GPP  = Ags.multiply(1.0368).rename('GPP'); //86400/1e6*12
             
@@ -674,9 +705,9 @@ var range     = [-180, -60, 180, 90],
     crsTransform = prj.crsTransform;
     
 if (exec) {
-    var PMLV2 = true; //If false, PML_V1 will be used!
+    var is_PMLV2 = true; //If false, PML_V1 will be used!
     var bands, folder;
-    if (PMLV2) {
+    if (is_PMLV2) {
         bands = ['GPP', 'Ec', 'Es', 'Ei', 'ET_water', 'qc']; //,'qc'
         folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day';//'projects/pml_evapotranspiration/PML_v2';
     } else {
@@ -693,19 +724,37 @@ if (exec) {
     var imgcol_PML, img_year;
     var begin_date, ydays;
     
+    var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');
+    var years = ee.List.sequence(2003, 2017);
+    
     if (debug) {
-        begin_date = ee.Date.fromYMD(year,1,1);
-        ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
+        // begin_date = ee.Date.fromYMD(year,1,1);
+        // ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
         
-        imgcol_PML = PML(year, PMLV2);
-        img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
-            .set('system:time_start', begin_date.millis())
-            .set('system:id', begin_date.format('YYYY-MM-dd'));
+        // imgcol_PML = PML(year, is_PMLV2);
+        // img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
+        //     .set('system:time_start', begin_date.millis())
+        //     .set('system:id', begin_date.format('YYYY-MM-dd'));
         
-        // print('imgcol_PML', ydays, imgcol_PML, img_year);
-        // check outliers
-        var img = imgcol_PML.first(); //img_year; //
-        var mask = img.select('Ec').expression('b() > 1e5 || b() < 0');
+        // // print('imgcol_PML', ydays, imgcol_PML, img_year);
+        // // check outliers
+        // var img = imgcol_PML.first(); //img_year; //
+        // var mask = img.select('Ec').expression('b() > 1e5 || b() < 0');
+        
+        var imgcol_year = years.map(function(year){
+        var imgcol_PML = PML(year, is_PMLV2);
+        
+        var begin_date = ee.Date.fromYMD(year,1,1);
+        // var task = begin_date.format('YYYY-MM-dd').getInfo();
+        var ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
+        
+        var img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
+                    .set('system:time_start', begin_date.millis())
+                    .set('system:id', task);
+            return img_year;
+        });
+        
+        print(imgcol_year);
         
         var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
         var vis_et  = {min: 100, max: 1600 , palette:pkg_vis.colors.RdYlBu[11]},
@@ -713,7 +762,7 @@ if (exec) {
         var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP', true); 
         
         // Map.addLayer(mask, {min:0, max:1, palette: ['white', 'red']}, 'mask');
-        Map.addLayer(img_year.select('GPP'), vis_gpp, 'img_year');
+        // Map.addLayer(img_year.select('GPP'), vis_gpp, 'img_year');
     } else {
         // export parameter for yearly PML
         var folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_bilinear';
@@ -725,7 +774,7 @@ if (exec) {
             
             ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
             
-            imgcol_PML = PML(year, PMLV2);
+            imgcol_PML = PML(year, is_PMLV2);
             img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
                 .set('system:time_start', begin_date.millis())
                 .set('system:id', task);
