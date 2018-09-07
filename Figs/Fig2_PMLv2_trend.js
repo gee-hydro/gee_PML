@@ -23,6 +23,10 @@ var options = {
         
 maps.forEach(function(value, i) {
     var imgcol = imgcols[i];
+    imgcol = imgcol.map(function(img){
+        var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename("ET");
+        return img.addBands(ET);
+    });
     var img = pkg_trend.imgcol_trend(imgcol, 'GPP', true);
 
     // var img = imgcol.first().select('GPP');
@@ -35,3 +39,8 @@ maps.forEach(function(value, i) {
 });
 
 maps[0].add(lg_slp);
+
+
+
+
+
