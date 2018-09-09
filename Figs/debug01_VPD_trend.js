@@ -1,5 +1,8 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var ImgCol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_v21_8day");
+var ImgCol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_v21_8day"),
+    imgcol_LAI = ee.ImageCollection("MODIS/006/MCD15A3H"),
+    imgcol_VI = ee.ImageCollection("MODIS/006/MOD13A1"),
+    imgcol_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
 var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
@@ -33,43 +36,71 @@ var Gsc         = 0.0820,  // solar constant in unit MJ m-2 min-1,
 
 // var prj = pkg_export.getProj(imgcol_land);
 
-var imgcol = ImgCol_gldas.map(PML_daily);
-var years  = ee.List.sequence(2003, 2017);
+var imgcol_vpd = ImgCol_gldas.map(PML_daily).select([0], ['VPD']);
 
-var imgcol_years = years.map(function(year){
-    year = ee.Number(year);
-    var date = ee.Date.fromYMD(year, 1, 1);
-    
-    var annual = imgcol.filter(ee.Filter.calendarRange(year, year, 'year'))
-        // .select(bands)
-        .mean(); // .multiply(36525);
-    
-    // Land cover data range: 2000-2016, add IGBP data into output for
-    // calculate annual change grouped by IGBP.
+function calYearlyTrend(imgcol, band){
+    var years  = ee.List.sequence(2003, 2017);
+    var imgcol_years = years.map(function(year){
+        year = ee.Number(year);
+        var date = ee.Date.fromYMD(year, 1, 1);
         
-    // var ET  = annual.expression('b("Ec") + b("Es")+ b("Ei")').rename('ET'); // + b("Ei")
-    var img = annual.toFloat() //returned img
-        .set('system:time_start', date.millis())
-        .set('system:index', date.format('YYYY-MM-dd'))
-        .set('system:id', date.format('YYYY-MM-dd'));
+        var annual = imgcol.filter(ee.Filter.calendarRange(year, year, 'year'))
+            // .select(bands)
+            .mean(); // .multiply(36525);
+        
+        // Land cover data range: 2000-2016, add IGBP data into output for
+        // calculate annual change grouped by IGBP.
+            
+        // var ET  = annual.expression('b("Ec") + b("Es")+ b("Ei")').rename('ET'); // + b("Ei")
+        var img = annual.toFloat() //returned img
+            .set('system:time_start', date.millis())
+            .set('system:index', date.format('YYYY-MM-dd'))
+            .set('system:id', date.format('YYYY-MM-dd'));
+        
+        // if (V2){
+        //     var WUE = annual.expression('b("GPP") / ET', {ET:ET}).rename('WUE');
+        //     img = img.addBands([WUE]);//, land
+        // }
+        // img = img.addBands([land]);//, land
+        // ET  = ee.Image(toInt(ET));
+        // GPP = ee.Image(toInt(GPP));
+        // var WUE = annual.expression('b("GPP") / b("Ec")').rename('WUE');
+        return img;
+    });
+
+    imgcol_years  = ee.ImageCollection(imgcol_years).select([0], [band]);
+    var img_trend = pkg_trend.imgcol_trend(imgcol_years, band, true);
     
-    // if (V2){
-    //     var WUE = annual.expression('b("GPP") / ET', {ET:ET}).rename('WUE');
-    //     img = img.addBands([WUE]);//, land
-    // }
-    // img = img.addBands([land]);//, land
-    // ET  = ee.Image(toInt(ET));
-    // GPP = ee.Image(toInt(GPP));
-    // var WUE = annual.expression('b("GPP") / b("Ec")').rename('WUE');
-    return img;
+    return img_trend;
+}
+
+imgcol_v2 = imgcol_v2.map(function(img){
+    var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename('ET');
+    return img.addBands(ET);
 });
 
-imgcol_years = ee.ImageCollection(imgcol_years).select([0], ['VPD']);
-print(imgcol_years);
-
+var t_vpd  = calYearlyTrend(imgcol_vpd, 'VPD');
+var t_LAI  = calYearlyTrend(imgcol_LAI, 'Lai');
+var t_EVI  = calYearlyTrend(imgcol_VI, 'EVI');
+var t_NDVI = calYearlyTrend(imgcol_VI, 'NDVI');
+var t_gpp  = calYearlyTrend(imgcol_v2, 'GPP');
+var t_et   = calYearlyTrend(imgcol_v2, 'ET');
 // var vis_slp = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"]};
-var vis_slp = {min:-0.1, max:0.1, palette:["ff0d01","fafff5","2aff03"]};
-var lg_slp  = pkg_vis.grad_legend(vis_slp, 'Trend (kPa y-1)', true); //gC m-2 y-2
+var vis_slp = {min:-0.1, max:0.1, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
+var vis_vi = {min:-0.01, max:0.01, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
+
+var lg_slp = pkg_vis.grad_legend(vis_slp, 'Trend (kPa y-1)', false); //gC m-2 y-2
+var lg_vi  = pkg_vis.grad_legend(vis_vi, 'Trend (VI y-1)', false); //gC m-2 y-2
+
+pkg_vis.add_lgds([lg_slp, lg_vi]);
+
+Map.addLayer(t_vpd, vis_slp, 'gpp');
+Map.addLayer(t_LAI.divide(1e2), vis_vi, 'LAI');
+Map.addLayer(t_EVI.divide(1e4), vis_vi, 'EVI');
+// Map.addLayer(t_NDVI.divide(1e4), vis_vi, 'NDVI');
+
+Map.addLayer(t_gpp, vis_gpp, 'gpp');
+Map.addLayer(t_et , vis_et , 'et');
 
 // // multiple panel map
 // var maps = pkg_vis.layout(2);
@@ -91,8 +122,7 @@ var lg_slp  = pkg_vis.grad_legend(vis_slp, 'Trend (kPa y-1)', true); //gC m-2 y-
 //         return img.addBands(ET);
 //     });
 //     var img = pkg_trend.imgcol_trend(imgcol, 'GPP', true);
-       var img = pkg_trend.imgcol_trend(imgcol_years, 'VPD', true);
-      Map.addLayer(img.select('slope'), vis_slp, 'gpp');
+      
 //     // var img = imgcol.first().select('GPP');
 //     var lab_style = {fontWeight:'bold', fontSize: 36};
     
