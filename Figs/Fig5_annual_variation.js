@@ -6,10 +6,10 @@ var MOD16A2_105 = ee.ImageCollection("MODIS/NTSG/MOD16A2/105"),
     pml_v2_yearly_v011 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly"),
     MOD16A2_006 = ee.ImageCollection("MODIS/006/MOD16A2"),
     ImgCol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
-    pml_v2_yearly_v012 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_bilinear");
+    pml_v2_yearly_v012 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var imgcol_year, bands, folder, prefix, years,  
-    V2 = false;
+    V2 = true;
     
 if (V2){
     imgcol_year = pml_v2_yearly_v012;
