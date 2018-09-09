@@ -32,6 +32,11 @@ var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165
  * var pkg_PML = require('users/kongdd/pkgs:Math/PML_v2.js');
  * 
  * Dongdong Kong; 30 April, 2018
+ * 
+ * Update 09 Sep, 2018
+ * -------------------
+ * 1. Add trend inspection module
+ * 
  */ 
 
 
@@ -732,11 +737,47 @@ function PML(year, is_PMLV2) {
 
 var exec = true;
 var range     = [-180, -60, 180, 90],
+    bounds    = ee.Geometry.Rectangle(range, 'EPSG:4326', false), //[xmin, ymin, xmax, ymax]
     cellsize  = 1 / 240, //1/240,
     type      = 'asset',
     crs       = 'SR-ORG:6974', //projects/pml_evapotranspiration
     crsTransform = prj.crsTransform;
     
+function img_GlobalSum(img, bands, scale){
+    bands = bands || img.bandNames();
+    scale = scale || 50000;
+    /** define reducer */
+    // define reduction function (client-side), see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Reduce
+    var combine = function(reducer, prev) { return reducer.combine(prev, null, true); };
+    var reducers = [ ee.Reducer.mean(), ee.Reducer.count(), ee.Reducer.stdDev()];
+    // var reducer = ee.Reducer.sum();
+    // print(reducers.slice(1), 'reducers.slice(1)');
+    var reducer = reducers.slice(1).reduce(combine, reducers[0]);
+    
+    var dict = img.select(bands).reduceRegion({
+            reducer: reducer,
+            geometry: bounds,
+            scale:scale, maxPixels: 1e13, tileScale: 16 });
+    
+    var fc = ee.FeatureCollection(ee.Feature(null, dict));
+    Export.table.toDrive({
+            collection: fc, 
+            description: 'temp',
+            folder: "IGBP", 
+            fileFormat: 'GeoJSON'
+        });
+    return fc;
+}
+
+function imgcol_globalSum(){
+    Export.table.toDrive({
+        collection: x, 
+        description: task,
+        folder: "IGBP", 
+        fileFormat: 'GeoJSON'
+    });
+}
+
 if (exec) {
     var is_PMLV2 = true; //If false, PML_V1 will be used!
     var bands, folder;
@@ -749,26 +790,26 @@ if (exec) {
     }
 
     var year  = 2003,
-        year_begin = 2009, 
-        year_end   = 2014, //year_begin + 3,
+        year_begin = 2003, 
+        year_end   = 2007, //year_begin + 3,
         save  = true, //global param called in PML_main
-        debug = true;
+        debug = false;
 
     var imgcol_PML, img_year;
     var begin_date, ydays;
     
-    var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
-    var vis_et  = {min: 100, max: 1600 , palette:pkg_vis.colors.RdYlBu[11]},
-        vis_gpp = {min: 100, max: 3900 , palette:pkg_vis.colors.RdYlGn[11]};
-    var vis_slp = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"]};
-    
-    var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP', true); 
-    var lg_slp  = pkg_vis.grad_legend(vis_slp, 'Trend (gC m-2 y-2)', true); //gC m-2 y-2, kPa y-1
-
-    var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');
     var years = ee.List.sequence(2003, 2012);
     
     if (debug) {
+        var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
+        var vis_et  = {min: 100, max: 1600 , palette:pkg_vis.colors.RdYlBu[11]},
+            vis_gpp = {min: 100, max: 3900 , palette:pkg_vis.colors.RdYlGn[11]};
+        var vis_slp = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"]};
+        
+        var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP', true); 
+        var lg_slp  = pkg_vis.grad_legend(vis_slp, 'Trend (gC m-2 y-2)', true); //gC m-2 y-2, kPa y-1
+    
+        var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');
         // year = ee.Number(year);
         // begin_date = ee.Date.fromYMD(year,1,1);
         // ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
@@ -807,10 +848,14 @@ if (exec) {
         Map.addLayer(img_trend.select('slope'), vis_slp, 'gpp');
       
         var img = imgcol_year.first(); //img_year; //
+        
+        var globalSum = img_GlobalSum(img);
+        print(img, globalSum, 'globalSum');
+        
         var mask = img.expression('b("Ec")+b("Es")+b("Ei")').expression('b() > 1e5 || b() < 0');
         Map.addLayer(img.select('GPP'), vis_gpp, 'first_year GPP');
         
-        print(imgcol_year, img_trend);
+        // print(imgcol_year, img_trend);
         
         task = 'img_trend';
         folder_yearly = 'projects/pml_evapotranspiration/PML/v012';
@@ -820,7 +865,7 @@ if (exec) {
         
     } else {
         // export parameter for yearly PML
-        var folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_bilinear';
+        var folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly'; //_bilinear
         var task;
         
         for (var year = year_begin; year <= year_end; year++){
