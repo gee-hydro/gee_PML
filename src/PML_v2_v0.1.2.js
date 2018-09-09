@@ -706,6 +706,9 @@ function PML(year, is_PMLV2) {
         /** Export ImgCol into asset */
         var save = true;
         if (save){
+          var dates = ee.List(INPUTS.aggregate_array('system:time_start'))
+            .map(function(date) { return ee.Date(date).format('yyyy-MM-dd'); }); //.getInfo(); //DATES of INPUT
+        
             // print('hello', PML_Imgs, dates);
             var img = ee.Image(PML_Imgs.first());
             // img = img.select(ee.List.sequence(0, 4)); //rm qc band
@@ -727,8 +730,6 @@ function PML(year, is_PMLV2) {
     
     var INPUTS = PML_INPUTS_d8(year);
     // Map.addLayer(INPUTS, {}, 'INPUT');
-    var dates = ee.List(INPUTS.aggregate_array('system:time_start'))
-        .map(function(date) { return ee.Date(date).format('yyyy-MM-dd'); }); //.getInfo(); //DATES of INPUT
     
     var PML_Imgs = PML_period(INPUTS);
     // Export();
@@ -790,8 +791,8 @@ if (exec) {
     }
 
     var year  = 2003,
-        year_begin = 2003, 
-        year_end   = 2007, //year_begin + 3,
+        year_begin = 2013, 
+        year_end   = 2017, //year_begin + 3,
         save  = true, //global param called in PML_main
         debug = false;
 
