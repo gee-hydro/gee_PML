@@ -2,7 +2,10 @@
 var ImgCol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_v21_8day"),
     imgcol_LAI = ee.ImageCollection("MODIS/006/MCD15A3H"),
     imgcol_VI = ee.ImageCollection("MODIS/006/MOD13A1"),
-    imgcol_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly");
+    imgcol_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly"),
+    imgcol_gpp_mod = ee.ImageCollection("MODIS/006/MOD17A2H"),
+    imgcol_v1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly"),
+    imgcol_v2_v013 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v013");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
 var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
@@ -74,65 +77,75 @@ function calYearlyTrend(imgcol, band){
     return img_trend;
 }
 
-imgcol_v2 = imgcol_v2.map(function(img){
+function calETSum(img){
     var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename('ET');
     return img.addBands(ET);
-});
+}
+
+var imgcol_v2 = imgcol_v2.map(calETSum);
+imgcol_v1 = imgcol_v1.map(calETSum);
 
 var t_vpd  = calYearlyTrend(imgcol_vpd, 'VPD');
 var t_LAI  = calYearlyTrend(imgcol_LAI, 'Lai');
 var t_EVI  = calYearlyTrend(imgcol_VI, 'EVI');
 var t_NDVI = calYearlyTrend(imgcol_VI, 'NDVI');
 var t_gpp  = calYearlyTrend(imgcol_v2, 'GPP');
-var t_et   = calYearlyTrend(imgcol_v2, 'ET');
-// var vis_slp = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"]};
+var t_et_v2   = calYearlyTrend(imgcol_v2, 'ET');
+var t_et_v1   = calYearlyTrend(imgcol_v1, 'ET');
+
+var t_gpp_mod  = calYearlyTrend(imgcol_gpp_mod, 'GPP');
+
+var vis_gpp = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
+var vis_et  = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
+
 var vis_slp = {min:-0.1, max:0.1, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
 var vis_vi = {min:-0.01, max:0.01, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
 
 var lg_slp = pkg_vis.grad_legend(vis_slp, 'Trend (kPa y-1)', false); //gC m-2 y-2
 var lg_vi  = pkg_vis.grad_legend(vis_vi, 'Trend (VI y-1)', false); //gC m-2 y-2
+var lg_et  = pkg_vis.grad_legend(vis_et, 'Trend (mm y-1)', false); //gC m-2 y-2
 
-pkg_vis.add_lgds([lg_slp, lg_vi]);
+// pkg_vis.add_lgds([lg_slp, lg_vi]);
 
-Map.addLayer(t_vpd, vis_slp, 'gpp');
-Map.addLayer(t_LAI.divide(1e2), vis_vi, 'LAI');
-Map.addLayer(t_EVI.divide(1e4), vis_vi, 'EVI');
-// Map.addLayer(t_NDVI.divide(1e4), vis_vi, 'NDVI');
+// Map.addLayer(t_vpd, vis_slp, 'gpp');
+// Map.addLayer(t_LAI.divide(1e2), vis_vi, 'LAI');
+// Map.addLayer(t_EVI.divide(1e4), vis_vi, 'EVI');
+// // Map.addLayer(t_NDVI.divide(1e4), vis_vi, 'NDVI');
 
-Map.addLayer(t_gpp, vis_gpp, 'gpp');
-Map.addLayer(t_et , vis_et , 'et');
+// Map.addLayer(t_gpp    , vis_gpp, 'gpp');
+// Map.addLayer(t_gpp_mod, vis_gpp, 'gpp mod');
+
+// Map.addLayer(t_et_v1 , vis_et , 'et_v1');
+// Map.addLayer(t_et_v2 , vis_et , 'et_v2');
+
+// 
+var maps = pkg_vis.layout(2);
 
 // // multiple panel map
-// var maps = pkg_vis.layout(2);
-// var labels = ['(a) v0.1.1', //meteorological forcing 
-//     '(b) v0.1.2'];
-// var imgcols = [imgcol_v011, imgcol_v012];
+// 
+var labels = ['(a) PML-V1', //meteorological forcing 
+    '(b) PMLV2'];
+var imgs = [t_et_v1, t_et_v2];
 
-// var options = {
-//     fullscreenControl: false, 
-//     mapTypeControl   : false,
-//     zoomControl: false,
-//     layerList  : false
-// };
+var options = {
+    fullscreenControl: false, 
+    mapTypeControl   : false,
+    zoomControl: false,
+    layerList  : false
+};
         
-// maps.forEach(function(value, i) {
-//     var imgcol = imgcols[i];
-//     imgcol = imgcol.map(function(img){
-//         var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename("ET");
-//         return img.addBands(ET);
-//     });
-//     var img = pkg_trend.imgcol_trend(imgcol, 'GPP', true);
-      
-//     // var img = imgcol.first().select('GPP');
-//     var lab_style = {fontWeight:'bold', fontSize: 36};
+maps.forEach(function(value, i) {
+    var img = imgs[i];
+    // var img = imgcol.first().select('GPP');
+    var lab_style = {fontWeight:'bold', fontSize: 36};
     
-//     var map = maps[i];
-//     map.setControlVisibility(options);
-    // map.addLayer(img.select('slope'), vis_slp, 'gpp');
-//     map.widgets().set(3, ui.Label(labels[i], lab_style));
-// });
+    var map = maps[i];
+    map.setControlVisibility(options);
+    map.addLayer(img.select('slope'), vis_et, labels[i]);
+    map.widgets().set(3, ui.Label(labels[i], lab_style));
+});
 
-// maps[0].add(lg_slp);
+maps[0].add(lg_et);
 
 
 
