@@ -102,8 +102,9 @@ var vis_slp = {min:-0.1, max:0.1, palette:["ff0d01","fafff5","2aff03"], bands:'s
 var vis_vi = {min:-0.01, max:0.01, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
 
 var lg_slp = pkg_vis.grad_legend(vis_slp, 'Trend (kPa y-1)', false); //gC m-2 y-2
-var lg_vi  = pkg_vis.grad_legend(vis_vi, 'Trend (VI y-1)', false); //gC m-2 y-2
-var lg_et  = pkg_vis.grad_legend(vis_et, 'Trend (mm y-1)', false); //gC m-2 y-2
+var lg_vi  = pkg_vis.grad_legend(vis_vi , 'Trend (VI y-1)', false); //gC m-2 y-2
+var lg_et  = pkg_vis.grad_legend(vis_et , 'ET Trend (mm y-1)', false); //gC m-2 y-2
+var lg_gpp = pkg_vis.grad_legend(vis_gpp, 'GPP Trend (gc y-1)', false); //gC m-2 y-2
 
 // pkg_vis.add_lgds([lg_slp, lg_vi]);
 
@@ -119,13 +120,13 @@ var lg_et  = pkg_vis.grad_legend(vis_et, 'Trend (mm y-1)', false); //gC m-2 y-2
 // Map.addLayer(t_et_v2 , vis_et , 'et_v2');
 
 // 
-var maps = pkg_vis.layout(2);
+var maps = pkg_vis.layout(4);
 
 // // multiple panel map
 // 
-var labels = ['(a) PML-V1', //meteorological forcing 
-    '(b) PMLV2'];
-var imgs = [t_et_v1, t_et_v2];
+var labels = ['(a) PML-V1 ET', //meteorological forcing 
+    '(b) PMLV2 ET', '(c) MOD17 GPP', '(d) PMLV2 GPP'];
+var imgs = [t_et_v1, t_et_v2, t_gpp_mod, t_gpp];
 
 var options = {
     fullscreenControl: false, 
@@ -139,14 +140,16 @@ maps.forEach(function(value, i) {
     // var img = imgcol.first().select('GPP');
     var lab_style = {fontWeight:'bold', fontSize: 36};
     
+    var vis =  i > 2 ? vis_gpp : vis_et;
+    
     var map = maps[i];
     map.setControlVisibility(options);
-    map.addLayer(img.select('slope'), vis_et, labels[i]);
+    map.addLayer(img.select('slope'), vis, labels[i]);
     map.widgets().set(3, ui.Label(labels[i], lab_style));
 });
 
 maps[0].add(lg_et);
-
+maps[2].add(lg_gpp);
 
 
 function vapor_pressure(t) {
