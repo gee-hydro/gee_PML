@@ -72,9 +72,10 @@ function calYearlyTrend(imgcol, band){
     });
 
     imgcol_years  = ee.ImageCollection(imgcol_years).select([0], [band]);
+    var img_mean  = imgcol_years.mean().rename('mean');
     var img_trend = pkg_trend.imgcol_trend(imgcol_years, band, true);
     
-    return img_trend;
+    return img_trend.addBands(img_mean);
 }
 
 function calETSum(img){
@@ -98,8 +99,8 @@ var t_gpp_mod  = calYearlyTrend(imgcol_gpp_mod, 'GPP');
 var vis_gpp = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
 var vis_et  = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
 
-var vis_slp = {min:-0.1, max:0.1, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
-var vis_vi = {min:-0.01, max:0.01, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
+var vis_slp = {min:-0.1 , max:0.1 , palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
+var vis_vi  = {min:-0.01, max:0.01, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
 
 var lg_slp = pkg_vis.grad_legend(vis_slp, 'Trend (kPa y-1)', false); //gC m-2 y-2
 var lg_vi  = pkg_vis.grad_legend(vis_vi , 'Trend (VI y-1)', false); //gC m-2 y-2
