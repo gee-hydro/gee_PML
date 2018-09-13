@@ -98,18 +98,23 @@ var options = {
         
 maps.forEach(function(value, i) {
     var imgcol = imgcols[i];
-    var img = imgcol.first().select('GPP');
+    var band = 'ET';
+    var img = imgcol.first();
+    var ET     = img.expression('b("Ec") + b("Es")+ b("Ei")').rename('ET');
+    img = img.addBands(ET);
     
     var lab_style = {fontWeight:'bold', fontSize: 18};
     
     var map = maps[i];
     map.setControlVisibility(options);
-    map.addLayer(img, vis_gpp, 'gpp');
+    // map.addLayer(img, vis_gpp, band);
+    map.addLayer(img.select(band), vis_et, band);
+    
     map.widgets().set(3, ui.Label(labels[i], lab_style));
 });
 
 maps[0].setCenter(97.112, 24.074, 6);
-maps[0].add(lg_gpp);
+maps[0].add(lg_et);
 
 // Map.addLayer(ET    , vis_et , 'annual average ET');
 // Map.addLayer(ET_v1, vis_et , 'annual average ET PML_v1');
