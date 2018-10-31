@@ -893,7 +893,7 @@ if (exec) {
         
     } else {
         // export parameter for yearly PML
-        var folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v013'; //_bilinear
+        var folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014'; //_bilinear
         var task;
         
         for (var year = year_begin; year <= year_end; year++){

@@ -4,7 +4,7 @@ var pml_v1_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTP
     img_lai = ee.Image("MODIS/006/MCD15A3H/2002_07_04"),
     pml_v1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day"),
     pml_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day"),
-    pml_v2_yearly_v012 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_bilinear");
+    pml_v2_yearly_v013 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v013");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /** 
  * Spatial distribution and ET component percentage
@@ -33,7 +33,7 @@ var annual, bands, folder, filename;
 var V2 = true;
 
 pml_v1_yearly = ee.ImageCollection(pml_v1_yearly.toList(20));
-var pml_v2_yearly = ee.ImageCollection(pml_v2_yearly_v012.toList(20));
+var pml_v2_yearly = ee.ImageCollection(pml_v2_yearly_v013.toList(20));
 
 var annual1   = pml_v1_yearly.mean().select([0, 1, 2, 3]).toFloat();
 var annual2   = pml_v2_yearly.mean().select([0, 1, 2, 3, 4]).toFloat();
@@ -85,10 +85,9 @@ Map.addLayer(ET    , vis_et , 'annual average ET');
 // pkg_vis.grad_legend(vis_et, 'ET', 'ET', true);
 Map.addLayer(WUE   , vis_wue, 'annual average WUE');
 
-
 // Map.addLayer(per_Ei   , vis_per, 'per_Ei');
 // Map.addLayer(per_Es   , vis_per, 'per_Es');
-// Map.addLayer(per_Ec   , vis_per, 'per_Ec');
+Map.addLayer(per_Ec   , vis_per, 'per_Ec');
 
 pkg_vis.add_lgds([lg_gpp, lg_et, lg_wue, lg_perc]);
 

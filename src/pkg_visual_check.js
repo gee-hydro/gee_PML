@@ -10,7 +10,7 @@ var MOD13Q1 = ee.ImageCollection("MODIS/006/MOD13Q1"),
     MOD16A2 = ee.ImageCollection("MODIS/NTSG/MOD16A2/105"),
     NLCD = ee.ImageCollection("USGS/NLCD"),
     MCD12Q1_005 = ee.ImageCollection("MODIS/051/MCD12Q1"),
-    MCD12Q1_006 = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/MCD12Q1_006");
+    MCD12Q1_006 = ee.ImageCollection("MODIS/006/MCD12Q1");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /**
  * Visualization to check fluxsits' landcover
@@ -23,6 +23,8 @@ var points     = require('users/kongdd/public:data/flux_points.js').points;
 var points_buf = points.map(function(f) { return f.buffer(500);});
 
 MCD12Q1_005 = MCD12Q1_005.select(['Land_Cover_Type_1']); //IGBP type
+MCD12Q1_006 = MCD12Q1_006.select(['LC_Type1']);
+
 var lc_colors_005 = ["#aec3d6", "#162103", "#235123", "#399b38", "#38eb38", "#39723b", 
     "#6a2424", "#c3a55f", "#b76124", "#d99125", "#92af1f", "#10104c", 
     "#cdb400", "#cc0202", "#332808", "#d7cdcc", "#f7e174", "#743411"];
