@@ -82,6 +82,6 @@ pkg_export.ExportImg_deg(img, task, range, cellsize, type, folder, crs);
 
 // export bandnames
 var bandnames = img.bandNames();
-var f = ee.Feature(null, {bandname: bandnames});
+var f = ee.FeatureCollection(ee.Feature(null, {bandname: bandnames}));
 var task_bandname = task.concat('_names');
 Export.table.toDrive(f, task_bandname, folder, task_bandname, "CSV");
