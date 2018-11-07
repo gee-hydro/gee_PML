@@ -1,6 +1,6 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var pml_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day"),
-    region = ee.FeatureCollection("users/zhangyq/Tibetan/subbasin");
+    region = ee.FeatureCollection("users/kongdd/shp/au_poly");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var pkg_export = require('users/kongdd/public:pkg_export.js');
 
@@ -32,4 +32,4 @@ var date_begin = '2002-07-04',
     
 imgcol = imgcol.filterDate(date_begin, date_end);
 
-pkg_export.ExportImgCol(imgcol, undefined, range, cellsize, type, folder, crs);
+pkg_export.ExportImgCol(imgcol.limit(3), undefined, range, cellsize, type, folder, crs);
