@@ -4,7 +4,8 @@ var pml_v1_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTP
     img_lai = ee.Image("MODIS/006/MCD15A3H/2002_07_04"),
     pml_v1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day"),
     pml_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day"),
-    pml_v2_yearly_v013 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v013");
+    pml_v2_yearly_v013 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v013"),
+    pml_v2_yearly_v014 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /** 
  * Spatial distribution and ET component percentage
@@ -33,7 +34,7 @@ var annual, bands, folder, filename;
 var V2 = true;
 
 pml_v1_yearly = ee.ImageCollection(pml_v1_yearly.toList(20));
-var pml_v2_yearly = ee.ImageCollection(pml_v2_yearly_v013.toList(20));
+var pml_v2_yearly = ee.ImageCollection(pml_v2_yearly_v014.toList(20));
 
 var annual1   = pml_v1_yearly.mean().select([0, 1, 2, 3]).toFloat();
 var annual2   = pml_v2_yearly.mean().select([0, 1, 2, 3, 4]).toFloat();
@@ -131,7 +132,7 @@ var cellsize = 1/12,
 // scale = 1/12; drive = false;
 // ExportImg_deg(annual1, range, 'PMLv1_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
 
-pkg_export.ExportImg_deg(annual2, 'PMLv2_Annual_average_v012_'.concat(1/cellsize), 
+pkg_export.ExportImg_deg(annual2, 'PMLv2_Annual_average_v014_'.concat(1/cellsize), 
     range, cellsize, type, folder, crs);
 
 // scale = 1/240; drive = false;

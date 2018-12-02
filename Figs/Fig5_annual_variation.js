@@ -7,13 +7,14 @@ var MOD16A2_105 = ee.ImageCollection("MODIS/NTSG/MOD16A2/105"),
     MOD16A2_006 = ee.ImageCollection("MODIS/006/MOD16A2"),
     ImgCol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
     pml_v2_yearly_v012 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly"),
-    pml_v2_yearly_v013 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v013");
+    pml_v2_yearly_v013 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v013"),
+    pml_v2_yearly_v014 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var imgcol_year, bands, folder, prefix, years,  
     V2 = true;
     
 if (V2){
-    imgcol_year = pml_v2_yearly_v013;
+    imgcol_year = pml_v2_yearly_v014;
     bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
     folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly'; //
     prefix = 'PMLV2_IGBP_mean_';
