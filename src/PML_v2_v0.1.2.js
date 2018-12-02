@@ -821,22 +821,25 @@ if (exec) {
         year_begin = 2013, 
         year_end   = 2017, //year_begin + 3,
         save  = true, //global param called in PML_main
-        debug = false;
+        debug = true;
 
     var imgcol_PML, img_year;
     var begin_date, ydays;
     
     var years = ee.List.sequence(2003, 2012);
     
-    if (debug) {
-        var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
-        var vis_et  = {min: 100, max: 1600 , palette:pkg_vis.colors.RdYlBu[11]},
-            vis_gpp = {min: 100, max: 3900 , palette:pkg_vis.colors.RdYlGn[11]};
-        var vis_slp = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"]};
-        
-        var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP', true); 
-        var lg_slp  = pkg_vis.grad_legend(vis_slp, 'Trend (gC m-2 y-2)', true); //gC m-2 y-2, kPa y-1
+    // visualization parameters
+    var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
+    var vis_et  = {min: 100, max: 1600 , palette:pkg_vis.colors.RdYlBu[11]},
+        vis_gpp = {min: 100, max: 3500 , palette:pkg_vis.colors.RdYlGn[11]};
+    var vis_slp = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"]};
     
+    var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP', false); 
+    var lg_slp  = pkg_vis.grad_legend(vis_slp, 'Trend (gC m-2 y-2)', false); //gC m-2 y-2, kPa y-1
+
+    pkg_vis.add_lgds([lg_gpp, lg_slp]);
+
+    if (debug) {
         var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');
         // year = ee.Number(year);
         // begin_date = ee.Date.fromYMD(year,1,1);
@@ -873,7 +876,7 @@ if (exec) {
         imgcol_year = ee.ImageCollection(imgcol_year);
         
         var img_trend = pkg_trend.imgcol_trend(imgcol_year, 'GPP', true);
-        Map.addLayer(img_trend.select('slope'), vis_slp, 'gpp');
+        // Map.addLayer(img_trend.select('slope'), vis_slp, 'gpp');
       
         var img = imgcol_year.first(); //img_year; //
         
