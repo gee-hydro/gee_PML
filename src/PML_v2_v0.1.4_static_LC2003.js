@@ -9,7 +9,9 @@ var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /**
  * PML_V2 (Penman-Monteith-Leuning) model 
- * 
+ *
+ * Land Cover is fixed in 2003;
+ *
  * @reference
  * 1. Gan, R., Zhang, Y., Shi, H., Yang, Y., Eamus, D., Cheng, L., Chiew, F.H.S., 
  *     Yu, Q., 2018. Use of satellite leaf area index estimating evapotranspiration 
@@ -82,6 +84,15 @@ MODIS 005 IGBP land cover code
 0  | UNC
 17 | WATER
  */
+function updateYear(date, year){
+    date = ee.Date(date);
+    year = ee.Number(year);
+    var doy  = date.difference(ee.Date.fromYMD(date.get('year').subtract(1), 12, 31), 'day');
+    
+    var date2 = year.format('%d').cat(doy.format('%03d'));
+    date2 = ee.Date.parse('yyyyDDD', date2);
+    return date2;  
+}
 
 /** fix MCD12Q1_006 land cover code. */
 var ImgCol_land = imgcol_land.select(0).map(function(land){
@@ -169,7 +180,9 @@ if (I_interp){
 
 /**
  * Prepare INPUT datset for PML_V2
- *
+ * 
+ * @note Only one year in this function.
+ * 
  * @param {[type]} begin_year [description]
  * @param {[type]} end_year   [description]
  */
@@ -184,15 +197,16 @@ function PML_INPUTS_d8(begin_year, end_year){
             begin_yearStr.cat("-07-01"), begin_yearStr.cat("-01-01"))),
         date_end    = ee.Date(end_yearStr.cat("-12-31"));
     var filter_date = ee.Filter.date(date_begin, date_end);
+    var filter_date_static2003 = ee.Filter.date('2003-01-01', '2003-12-31');
     // print(date_begin, date_end);
     
     /** MODIS LAI, Albedo, Emiss */
-    // var miss_date = ee.Date('2003-12-19'); //replaced with 2003-12-23
-    // var lai_miss  = imgcol_lai.filterDate('2003-12-22', '2003-12-24')
-    //     .map(function(img){ return pkg_main.setImgProperties(img, miss_date); })
-    //     .sort("system:time_start");
+    var miss_date = ee.Date('2003-12-19'); //replaced with 2003-12-23
+    var lai_miss  = imgcol_lai.filterDate('2003-12-22', '2003-12-24')
+        .map(function(img){ return pkg_main.setImgProperties(img, miss_date); })
+        .sort("system:time_start");
     
-    var LAI_d4  = imgcol_lai.filter(filter_date);//.merge(lai_miss);
+    var LAI_d4  = imgcol_lai.filter(filter_date_static2003).merge(lai_miss);
     LAI_d4      = LAI_d4.map(pkg_trend.add_dn(true, 8));
     
     var LAI_d8 = pkg_trend.aggregate_prop(LAI_d4, 'dn', 'mean').select([0], ['LAI']);
@@ -201,12 +215,11 @@ function PML_INPUTS_d8(begin_year, end_year){
     LAI_d8 = LAI_d8.map(function(img){
         return img.updateMask(img.gte(0)).unmask(0); //.mask(land_mask); // LAI[LAI < 0] <- 0
     });
-    
     // LAI has missing images, need to fix in the future
     
-    var Albedo_d8 = imgcol_albedo.filter(filter_date);
-    var Emiss_d8  = imgcol_emiss.filter(filter_date);
-        
+    var Albedo_d8 = imgcol_albedo.filter(filter_date_static2003);
+    var Emiss_d8  = imgcol_emiss.filter(filter_date_static2003);
+    
     var modis_input = pkg_join.SaveBest(Emiss_d8, LAI_d8);
     modis_input     = pkg_join.SaveBest(modis_input, Albedo_d8);
     
@@ -216,7 +229,7 @@ function PML_INPUTS_d8(begin_year, end_year){
         modis_input = modis_input.map(function(img){
             var qc = img.expression('b("qc") + b("qc_1")*8').toUint8(); //qc, 0-2:emiss, 3-5:albedo
             return img.select(['LAI', 'Emiss', 'Albedo']).addBands(qc);
-        });    
+        });
     }
     
     var gldas_input = ImgCol_gldas.filter(filter_date);
@@ -226,7 +239,19 @@ function PML_INPUTS_d8(begin_year, end_year){
         });
     }
     
-    var pml_input   = pkg_join.InnerJoin(modis_input, gldas_input).sort("system:time_start");
+    // Update Year
+    modis_input = modis_input.map(function(img){
+        var date = img.get('system:time_start');
+        date = updateYear(date, begin_year);
+        img = img.set('system:time_start', date.millis());
+        return img;
+    });
+    
+    ////////////////////////////////////////////
+    // Need to reset `system:time_start` to join
+    var pml_input   = pkg_join.InnerJoin(gldas_input, modis_input).sort("system:time_start");
+    // print(modis_input, gldas_input, pml_input);
+    
     // Map.addLayer(pml_input, {}, 'pml_input');
     // Map.addLayer(modis_input, {}, 'modis_input');
     return ee.ImageCollection(pml_input);
@@ -365,10 +390,10 @@ function PML(year, is_PMLV2) {
         year_min = 2001;
     var year_land = ee.Algorithms.If(year.gt(year_max), year_max, 
             ee.Algorithms.If(year.lt(year_min), year_min, year));
+    year_land = 2003; // fixed LAND COVER in 2003
   
     var filter_date_land = ee.Filter.calendarRange(year_land, year_land, 'year');
     var land = ee.Image(ImgCol_land.filter(filter_date_land).first()); //land_raw was MODIS/051/MCD12Q1
-    
     /** remove water, snow and ice, and unclassified land cover using updateMask */
     // var mask     = land.expression('b() != 0 && b() != 15 && b() != 17');
     // land         = land.updateMask(mask);
@@ -718,7 +743,7 @@ if (exec) {
 
     var year  = 2003,
         year_begin = 2003, 
-        year_end   = year_begin + 4, //year_begin + 3,
+        year_end   = year_begin + 1, //year_begin + 3,
         save  = true, //global param called in PML_main
         debug = false;
 
@@ -787,14 +812,14 @@ if (exec) {
         // print(imgcol_year, img_trend);
         
         task = 'img_trend';
-        folder_yearly = 'projects/pml_evapotranspiration/PML/v014';
+        folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014_staticLC2003';
         type = 'asset';
         pkg_export.ExportImg_deg(img_trend, task, range, cellsize, type, folder_yearly, crs, crsTransform);
         // Map.addLayer(mask, {min:0, max:1, palette: ['white', 'red']}, 'mask');
         
     } else {
         // export parameter for yearly PML
-        var folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014'; //_bilinear
+        var folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014_staticLC2003'; //_bilinear
         var task;
         
         for (var year = year_begin; year <= year_end; year++){
