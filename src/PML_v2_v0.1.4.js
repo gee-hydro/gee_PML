@@ -1,11 +1,11 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165830543]),
     ImgCol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_v21_8day"),
-    co2 = ee.FeatureCollection("ft:1trgP0M8MslxSolLNQFY-utpFlC2a14ySSFaZegy5"),
     imgcol_albedo = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d_v2"),
     imgcol_emiss = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d"),
     imgcol_lai_4d = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit_4d"),
-    imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1");
+    imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
+    co2 = ee.FeatureCollection("projects/pml_evapotranspiration/PML_INPUTS/co2_mm_gl_2002-2017_8day");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /**
  * PML_V2 (Penman-Monteith-Leuning) model 
@@ -99,7 +99,9 @@ var mean_albedo = imgcol_albedo.select(0).mean().multiply(0.001), // multiple ye
 var land_mask   = mean_emiss.mask(); // mask lead to export error, unknow reason
 
 /** 1.1 GLDAS and CO2 */
-var ImgCol_co2 = co2.toList(co2.size()).map(function(f){
+var ImgCol_co2 = co2.toList(co2.size())
+// .aside(print)
+.map(function(f){
     f = ee.Feature(f);
     var date = ee.Date.parse('YYYY-MM-dd', f.get('date'));
     // print(date);
@@ -710,7 +712,7 @@ if (exec) {
     var bands, folder;
     if (is_PMLV2) {
         bands = ['GPP', 'Ec', 'Es', 'Ei', 'ET_water', 'qc']; //,'qc'
-        folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day';//'projects/pml_evapotranspiration/PML_v2';
+        folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day_v014';//'projects/pml_evapotranspiration/PML_v2';
     } else {
         bands = ['Ec', 'Es', 'Ei', 'ET_water', 'qc'];
         folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day';
@@ -808,8 +810,8 @@ if (exec) {
                 .set('system:time_start', begin_date.millis())
                 .set('system:id', task);
             
-            pkg_export.ExportImg_deg(img_year, task, range, cellsize, type, folder_yearly, crs, crsTransform);
-            // pkg_export.ExportImgCol(PML_Imgs, dates, range, scale, type, folder, crs);
+            // pkg_export.ExportImg_deg(img_year, task, range, cellsize, type, folder_yearly, crs, crsTransform);
+            pkg_export.ExportImgCol(imgcol_PML, null, range, cellsize, type, folder, crs, crsTransform);
         }
     }
 }

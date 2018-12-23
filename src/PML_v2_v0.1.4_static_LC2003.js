@@ -1,11 +1,11 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165830543]),
     ImgCol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_v21_8day"),
-    co2 = ee.FeatureCollection("ft:1trgP0M8MslxSolLNQFY-utpFlC2a14ySSFaZegy5"),
     imgcol_albedo = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d_v2"),
     imgcol_emiss = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d"),
     imgcol_lai_4d = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit_4d"),
-    imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1");
+    imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
+    co2 = ee.FeatureCollection("projects/pml_evapotranspiration/PML_INPUTS/co2_mm_gl_2002-2017_8day");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /**
  * PML_V2 (Penman-Monteith-Leuning) model 
@@ -743,7 +743,7 @@ if (exec) {
 
     var year  = 2003,
         year_begin = 2003, 
-        year_end   = year_begin + 1, //year_begin + 3,
+        year_end   = year_begin + 4, //year_begin + 3,
         save  = true, //global param called in PML_main
         debug = false;
 
