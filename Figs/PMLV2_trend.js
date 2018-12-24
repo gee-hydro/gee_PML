@@ -5,7 +5,8 @@ var ImgCol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUT
     imgcol_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly"),
     imgcol_gpp_mod = ee.ImageCollection("MODIS/006/MOD17A2H"),
     imgcol_v1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly"),
-    imgcol_v2_v013 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v013");
+    imgcol_v2_yearly_v013 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v013"),
+    imgcol_v2_yearly_v014 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
 var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
@@ -16,7 +17,6 @@ var pkg_main   = require('users/kongdd/public:pkg_main.js');
 var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');
 var pkg_export = require('users/kongdd/public:pkg_export.js');
 // var points     = require('users/kongdd/public:data/flux_points.js').points;
-
 
 /** PML GLOBAL PARAMETERS */
 var Gsc         = 0.0820,  // solar constant in unit MJ m-2 min-1,
@@ -80,10 +80,16 @@ function calYearlyTrend(imgcol, band){
 
 function calETSum(img){
     var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename('ET');
-    return img.addBands(ET);
+    img = img.addBands(ET);
+    // var wue = img.expression('b("GPP")/b("ET")').rename('WUE');
+    // img = img.addBands(wue);
+    return img;
 }
 
-var imgcol_v2 = imgcol_v2.map(calETSum);
+var imgcol_v2 = imgcol_v2_yearly_v014.map(calETSum);
+// print(imgcol_v2);
+// Map.addLayer(imgcol_v2);
+
 imgcol_v1 = imgcol_v1.map(calETSum);
 
 var t_vpd  = calYearlyTrend(imgcol_vpd, 'VPD');
@@ -120,8 +126,7 @@ var lg_gpp = pkg_vis.grad_legend(vis_gpp, 'GPP Trend (gc y-1)', false); //gC m-2
 // Map.addLayer(t_et_v1 , vis_et , 'et_v1');
 // Map.addLayer(t_et_v2 , vis_et , 'et_v2');
 
-// 
-var maps = pkg_vis.layout(4);
+
 
 // // multiple panel map
 // 
@@ -135,7 +140,9 @@ var options = {
     zoomControl: false,
     layerList  : false
 };
-        
+
+var maps = pkg_vis.layout(4);
+
 maps.forEach(function(value, i) {
     var img = imgs[i];
     // var img = imgcol.first().select('GPP');
@@ -144,11 +151,12 @@ maps.forEach(function(value, i) {
     var vis =  i > 2 ? vis_gpp : vis_et;
     
     var map = maps[i];
-    map.setControlVisibility(options);
+    // map.setControlVisibility(options);
     map.addLayer(img.select('slope'), vis, labels[i]);
     map.widgets().set(3, ui.Label(labels[i], lab_style));
 });
 
+// maps[1].addLayer(imgcol_v2_v014, {}, 'PML_V2 annual');
 maps[0].add(lg_et);
 maps[2].add(lg_gpp);
 
