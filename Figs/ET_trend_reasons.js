@@ -19,6 +19,12 @@ var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');
 var pkg_export = require('users/kongdd/public:pkg_export.js');
 // var points     = require('users/kongdd/public:data/flux_points.js').points;
 
+var imgcol_temp         = pkg_trend.imgcol_addSeasonProb(ImgCol_gldas);
+var imgcol_gldas_annual = pkg_trend.aggregate_prop(imgcol_temp, "YearStr", 'mean');
+
+// print(imgcol_temp.limit(10), imgcol_gldas_annual);
+// Map.addLayer(imgcol_gldas_annual.select('Wind_f_inst'), {}, 'Wind_f_inst');
+
 /** PML GLOBAL PARAMETERS */
 var Gsc         = 0.0820,  // solar constant in unit MJ m-2 min-1,
     as          = 0.25,    // parameter Rs/Ra=as+bs*n/N; calibration from our solar radiation measurement
@@ -102,6 +108,7 @@ var t_et_v2   = calYearlyTrend(imgcol_v2, 'ET');
 var t_et_v1   = calYearlyTrend(imgcol_v1, 'ET');
 
 var t_gpp_mod  = calYearlyTrend(imgcol_gpp_mod, 'GPP');
+var t_gldas_wind = calYearlyTrend(imgcol_gldas_annual, 'U2_mean');
 
 var vis_gpp = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
 var vis_et  = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
@@ -114,6 +121,10 @@ var lg_vi  = pkg_vis.grad_legend(vis_vi , 'Trend (VI y-1)', false); //gC m-2 y-2
 var lg_et  = pkg_vis.grad_legend(vis_et , 'ET Trend (mm y-1)', false); //gC m-2 y-2
 var lg_gpp = pkg_vis.grad_legend(vis_gpp, 'GPP Trend (gc y-1)', false); //gC m-2 y-2
 
+var vis_slp = {min:-0.2 , max:0.2 , palette:["ff0d01","fafff5","2aff03"], bands:'slope'};
+var lg_slp = pkg_vis.grad_legend(vis_slp, 'Trend (wind y-1)', true);
+
+Map.addLayer(t_gldas_wind, vis_slp, 'gldas wind');
 // pkg_vis.add_lgds([lg_slp, lg_vi]);
 
 // Map.addLayer(t_vpd, vis_slp, 'gpp');
@@ -142,24 +153,24 @@ var options = {
     layerList  : false
 };
 
-var maps = pkg_vis.layout(4);
+// var maps = pkg_vis.layout(4);
 
-maps.forEach(function(value, i) {
-    var img = imgs[i];
-    // var img = imgcol.first().select('GPP');
-    var lab_style = {fontWeight:'bold', fontSize: 36};
+// maps.forEach(function(value, i) {
+//     var img = imgs[i];
+//     // var img = imgcol.first().select('GPP');
+//     var lab_style = {fontWeight:'bold', fontSize: 36};
     
-    var vis =  i > 2 ? vis_gpp : vis_et;
+//     var vis =  i > 2 ? vis_gpp : vis_et;
     
-    var map = maps[i];
-    // map.setControlVisibility(options);
-    map.addLayer(img.select('slope'), vis, labels[i]);
-    map.widgets().set(3, ui.Label(labels[i], lab_style));
-});
+//     var map = maps[i];
+//     // map.setControlVisibility(options);
+//     map.addLayer(img.select('slope'), vis, labels[i]);
+//     map.widgets().set(3, ui.Label(labels[i], lab_style));
+// });
 
-// maps[1].addLayer(imgcol_v2_v014, {}, 'PML_V2 annual');
-maps[0].add(lg_et);
-maps[2].add(lg_gpp);
+// // maps[1].addLayer(imgcol_v2_v014, {}, 'PML_V2 annual');
+// maps[0].add(lg_et);
+// maps[2].add(lg_gpp);
 
 
 function vapor_pressure(t) {
