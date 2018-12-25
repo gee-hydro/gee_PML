@@ -2,12 +2,13 @@
 var ImgCol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_v21_8day"),
     imgcol_LAI = ee.ImageCollection("MODIS/006/MCD15A3H"),
     imgcol_VI = ee.ImageCollection("MODIS/006/MOD13A1"),
-    imgcol_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly"),
     imgcol_gpp_mod = ee.ImageCollection("MODIS/006/MOD17A2H"),
     imgcol_v1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly"),
     imgcol_v2_yearly_v013 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v013"),
-    imgcol_v2_yearly_v014 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014");
+    imgcol_v2_yearly_v014 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014"),
+    imageCollection = ee.ImageCollection("CIESIN/GPWv4/population-density");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
+
 var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
 var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
 
@@ -17,6 +18,7 @@ var pkg_main   = require('users/kongdd/public:pkg_main.js');
 var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');
 var pkg_export = require('users/kongdd/public:pkg_export.js');
 // var points     = require('users/kongdd/public:data/flux_points.js').points;
+
 
 /** PML GLOBAL PARAMETERS */
 var Gsc         = 0.0820,  // solar constant in unit MJ m-2 min-1,
@@ -80,16 +82,13 @@ function calYearlyTrend(imgcol, band){
 
 function calETSum(img){
     var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename('ET');
-    img = img.addBands(ET);
+    // img = img.addBands(ET);
     // var wue = img.expression('b("GPP")/b("ET")').rename('WUE');
     // img = img.addBands(wue);
-    return img;
+    return img.addBands(ET);
 }
 
 var imgcol_v2 = imgcol_v2_yearly_v014.map(calETSum);
-// print(imgcol_v2);
-// Map.addLayer(imgcol_v2);
-
 imgcol_v1 = imgcol_v1.map(calETSum);
 
 var t_vpd  = calYearlyTrend(imgcol_vpd, 'VPD');
@@ -113,6 +112,19 @@ var lg_vi  = pkg_vis.grad_legend(vis_vi , 'Trend (VI y-1)', false); //gC m-2 y-2
 var lg_et  = pkg_vis.grad_legend(vis_et , 'ET Trend (mm y-1)', false); //gC m-2 y-2
 var lg_gpp = pkg_vis.grad_legend(vis_gpp, 'GPP Trend (gc y-1)', false); //gC m-2 y-2
 
+/** EXPORT */
+var prj = pkg_export.getProj(imgcol_gpp_mod);
+var range     = [-180, -60, 180, 90],
+    bounds    = ee.Geometry.Rectangle(range, 'EPSG:4326', false), //[xmin, ymin, xmax, ymax]
+    cellsize  = 1 / 240, //1/240,
+    type      = 'asset',
+    folder    = 'projects/pml_evapotranspiration/PML/OUTPUT/TREND',
+    crs       = 'SR-ORG:6974', //projects/pml_evapotranspiration
+    crsTransform = prj.crsTransform;
+    
+pkg_export.ExportImg_deg(t_gpp  , 'PMLV2_gpp_annual_trend', range, cellsize, type, folder, crs);
+pkg_export.ExportImg_deg(t_et_v2, 'PMLV2_et_annual_trend', range, cellsize, type, folder, crs); //, crsTransform
+
 // pkg_vis.add_lgds([lg_slp, lg_vi]);
 
 // Map.addLayer(t_vpd, vis_slp, 'gpp');
@@ -126,7 +138,8 @@ var lg_gpp = pkg_vis.grad_legend(vis_gpp, 'GPP Trend (gc y-1)', false); //gC m-2
 // Map.addLayer(t_et_v1 , vis_et , 'et_v1');
 // Map.addLayer(t_et_v2 , vis_et , 'et_v2');
 
-
+// 
+var maps = pkg_vis.layout(4);
 
 // // multiple panel map
 // 
@@ -141,7 +154,21 @@ var options = {
     layerList  : false
 };
 
-var maps = pkg_vis.layout(4);
+var dataset = ee.ImageCollection('CIESIN/GPWv4/population-density');
+var populationDensity = dataset.select('population-density');
+var populationDensityVis = {
+  min: 100.0,
+  max: 1000.0,
+  palette: ['ffffff', 'ffcdc6', 'ff0000', '950000'],
+};
+// Map.setCenter(79.1, 19.81, 3);
+// Map.addLayer(populationDensity, populationDensityVis, 'Population Density');
+
+maps[1].addLayer(t_gpp, vis_gpp, labels[3]);
+maps[1].addLayer(imgcol_v2, {}, 'original data');
+
+maps[2].add(lg_gpp);
+maps[2].addLayer(populationDensity, populationDensityVis, 'Population Density');
 
 maps.forEach(function(value, i) {
     var img = imgs[i];
@@ -156,10 +183,7 @@ maps.forEach(function(value, i) {
     map.widgets().set(3, ui.Label(labels[i], lab_style));
 });
 
-// maps[1].addLayer(imgcol_v2_v014, {}, 'PML_V2 annual');
 maps[0].add(lg_et);
-maps[2].add(lg_gpp);
-
 
 function vapor_pressure(t) {
     return t.expression('0.6108 * exp(17.27 * b() / (b() + 237.3))');
@@ -345,4 +369,3 @@ function PML_daily(img) {
     // return pkg_main.setImgProperties(newImg, beginDate);
     // return pkg_main.setImgProperties(img_check, beginDate);
 }
-
