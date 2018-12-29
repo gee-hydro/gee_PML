@@ -646,7 +646,7 @@ function PML(year, v2) {
             
             // export_image(img, '2002-07-05_v6');
             pkg_export.ExportImgCol(PML_Imgs, dates, range, scale, type, folder, crs);
-            // pkg_export.ExportImg_deg(img, range, '2002-07-05_v4', scale, drive, folder, crs)
+            // pkg_export.ExportImg(img, range, '2002-07-05_v4', scale, drive, folder, crs)
         }else{
             print('PML_Imgs', PML_Imgs);    
         }
@@ -706,6 +706,12 @@ if (exec) {
         
         for (var year = year_begin; year <= year_end; year++){
             imgcol_PML = PML(year, PMLV2);
+            img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
+                .set('system:time_start', begin_date.millis())
+                .set('system:id', task);
+            
+            pkg_export.ExportImg(img_year, task, range, cellsize, type, folder_yearly, crs, crsTransform);
+            // pkg_export.ExportImgCol(PML_Imgs, dates, range, scale, type, folder, crs);
         }
     }
 }

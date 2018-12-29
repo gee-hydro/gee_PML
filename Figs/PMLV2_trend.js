@@ -122,8 +122,8 @@ var range     = [-180, -60, 180, 90],
     crs       = 'SR-ORG:6974', //projects/pml_evapotranspiration
     crsTransform = prj.crsTransform;
     
-pkg_export.ExportImg_deg(t_gpp  , 'PMLV2_gpp_annual_trend', range, cellsize, type, folder, crs);
-pkg_export.ExportImg_deg(t_et_v2, 'PMLV2_et_annual_trend', range, cellsize, type, folder, crs); //, crsTransform
+pkg_export.ExportImg(t_gpp  , 'PMLV2_gpp_annual_trend', range, cellsize, type, folder, crs);
+pkg_export.ExportImg(t_et_v2, 'PMLV2_et_annual_trend', range, cellsize, type, folder, crs); //, crsTransform
 
 // pkg_vis.add_lgds([lg_slp, lg_vi]);
 

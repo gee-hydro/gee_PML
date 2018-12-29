@@ -159,19 +159,19 @@ folder = '';
 var cellsize = 1/12,
     type = 'drive';
 
-// pkg_export.ExportImg_deg(annual1, 'PMLv1_Annual_average_'.concat(1/scale), range, scale, drive, folder, 'EPSG:4326');
-// pkg_export.ExportImg_deg(annual2, 'PMLv2_Annual_average_'.concat(1/scale), range, scale, drive, folder, 'EPSG:4326');
+// pkg_export.ExportImg(annual1, 'PMLv1_Annual_average_'.concat(1/scale), range, scale, drive, folder, 'EPSG:4326');
+// pkg_export.ExportImg(annual2, 'PMLv2_Annual_average_'.concat(1/scale), range, scale, drive, folder, 'EPSG:4326');
 
 // crs    = 'SR-ORG:6974';
 // folder = 'projects/pml_evapotranspiration/PML/OUTPUT/MultiAnnualMean';
 // scale = 1/12; drive = false;
-// ExportImg_deg(annual1, range, 'PMLv1_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
-pkg_export.ExportImg_deg(annual2, 'PMLv2_Annual_average_v012_'.concat(1/cellsize), 
+// ExportImg(annual1, range, 'PMLv1_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
+pkg_export.ExportImg(annual2, 'PMLv2_Annual_average_v012_'.concat(1/cellsize), 
     range, cellsize, type, folder, crs);
 
 // scale = 1/240; drive = false;
-// ExportImg_deg(annual1, range, 'PMLv1_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
-// ExportImg_deg(annual2, range, 'PMLv2_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
+// ExportImg(annual1, range, 'PMLv1_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
+// ExportImg(annual2, range, 'PMLv2_Annual_average_'.concat(1/scale), scale, drive, folder, crs);
     
 // export_image(annual_v1    , 'PMLv1_Annual_average');
 // 2. try to Export video

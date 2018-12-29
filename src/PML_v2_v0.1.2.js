@@ -749,7 +749,7 @@ function PML(year, is_PMLV2) {
             
             // export_image(img, '2002-07-05_v6');
             pkg_export.ExportImgCol(PML_Imgs, dates, range, scale, type, folder, crs);
-            // pkg_export.ExportImg_deg(img, range, '2002-07-05_v4', scale, drive, folder, crs)
+            // pkg_export.ExportImg(img, range, '2002-07-05_v4', scale, drive, folder, crs)
         }else{
             print('PML_Imgs', PML_Imgs);    
         }
@@ -891,7 +891,7 @@ if (exec) {
         task = 'img_trend';
         folder_yearly = 'projects/pml_evapotranspiration/PML/v012';
         type = 'asset';
-        pkg_export.ExportImg_deg(img_trend, task, range, cellsize, type, folder_yearly, crs, crsTransform);
+        pkg_export.ExportImg(img_trend, task, range, cellsize, type, folder_yearly, crs, crsTransform);
         // Map.addLayer(mask, {min:0, max:1, palette: ['white', 'red']}, 'mask');
         
     } else {
@@ -910,7 +910,7 @@ if (exec) {
                 .set('system:time_start', begin_date.millis())
                 .set('system:id', task);
             
-            pkg_export.ExportImg_deg(img_year, task, range, cellsize, type, folder_yearly, crs, crsTransform);
+            pkg_export.ExportImg(img_year, task, range, cellsize, type, folder_yearly, crs, crsTransform);
             // pkg_export.ExportImgCol(PML_Imgs, dates, range, scale, type, folder, crs);
         }
     }

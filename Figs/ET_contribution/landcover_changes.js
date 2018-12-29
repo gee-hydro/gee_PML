@@ -149,7 +149,7 @@ var range     = [-180, -60, 180, 90],
     crs       = 'EPSG:4326'; //projects/pml_evapotranspiration
     // crsTransform = prj.crsTransform;
 
-// pkg_export.ExportImg_deg(img_diff    , 'landcover_change_perc_G025', range, cellsize, type, folder, crs);
+// pkg_export.ExportImg(img_diff    , 'landcover_change_perc_G025', range, cellsize, type, folder, crs);
 folder    = 'projects/pml_evapotranspiration/PML/OUTPUT/TREND/landcover_perc_G025';
 // pkg_export.ExportImgCol(imgcol_count, undefined, range, cellsize, type, folder, crs);
-// pkg_export.ExportImg_deg(t_et_v2, 'PMLV2_et_annual_trend', range, cellsize, type, folder, crs); //, crsTransform
+// pkg_export.ExportImg(t_et_v2, 'PMLV2_et_annual_trend', range, cellsize, type, folder, crs); //, crsTransform

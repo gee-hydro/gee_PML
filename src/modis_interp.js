@@ -190,7 +190,7 @@ function zip_albedo(img){
 // print(emiss_interp);
 
 // Map.addLayer(img_out, {}, 'img_out');
-// pkg_export.ExportImg_deg(img_out, range, task, scale, drive, folder, crs);
+// pkg_export.ExportImg(img_out, range, task, scale, drive, folder, crs);
 
 // imgcol_gpp = imgcol_gpp.filter(ee.Filter.calendarRange(2010, 2010, 'year'));
 // imgcol_v2  = imgcol_v2.filter(ee.Filter.calendarRange(2010, 2010, 'year'));

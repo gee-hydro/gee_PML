@@ -78,7 +78,7 @@ var img = imgcol.toBands();
 // print(imgcol.limit(3));
 print(img);
 var task = 'PML_multiple_bands';
-pkg_export.ExportImg_deg(img, task, range, cellsize, type, folder, crs);
+pkg_export.ExportImg(img, task, range, cellsize, type, folder, crs);
 
 // export bandnames
 var bandnames = img.bandNames();
