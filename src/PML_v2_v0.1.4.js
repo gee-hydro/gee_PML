@@ -582,7 +582,7 @@ function PML(year, is_PMLV2) {
         newImg = newImg.updateMask(mask_water.not()).addBands(ET_water); //add ET_water
         // Comment 2018-09-05, to get yearly sum, it can be converted to uint16
         // otherwise, it will be out of range.
-        // newImg = newImg.multiply(1e2).toUint16(); //CONVERT INTO UINT16 
+        newImg = newImg.multiply(1e2).toUint16(); //CONVERT INTO UINT16 
         
         if (I_interp){
             var qc = img.select('qc');  
@@ -618,7 +618,7 @@ function PML(year, is_PMLV2) {
         /** 4. calculate Es */
         var PML_Imgs_0 = pkg_join.SaveBest(PML_ImgsRaw, fval_soil); //.sort('system:time_start'); 
         var PML_Imgs = PML_Imgs_0.map(function(img) {
-            var Es = img.expression('b("Es_eq") * b("fval_soil")').rename('Es'); //.toUint16()
+            var Es = img.expression('b("Es_eq") * b("fval_soil")').rename('Es').toUint16()
             // var ET = img.expression('b("Ec") + b("Ei") + Es', { Es: Es }).rename('ET');
             return img.addBands(Es); //ET
         }).select(bands); //, 'ET_water'
@@ -712,14 +712,14 @@ if (exec) {
     var bands, folder;
     if (is_PMLV2) {
         bands = ['GPP', 'Ec', 'Es', 'Ei', 'ET_water', 'qc']; //,'qc'
-        folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day_v014';//'projects/pml_evapotranspiration/PML_v2';
+        folder = 'projects/pml_evapotranspiration/PML/V2/8day';//'projects/pml_evapotranspiration/PML_v2';
     } else {
         bands = ['Ec', 'Es', 'Ei', 'ET_water', 'qc'];
         folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day';
     }
 
     var year  = 2003,
-        year_begin = 2003, 
+        year_begin = 2013, 
         year_end   = year_begin + 4, //year_begin + 3,
         save  = true, //global param called in PML_main
         debug = false;
@@ -789,14 +789,14 @@ if (exec) {
         // print(imgcol_year, img_trend);
         
         task = 'img_trend';
-        folder_yearly = 'projects/pml_evapotranspiration/PML/v014';
+        folder_yearly = 'projects/pml_evapotranspiration/PML/V2/yearly';
         type = 'asset';
         pkg_export.ExportImg(img_trend, task, range, cellsize, type, folder_yearly, crs, crsTransform);
         // Map.addLayer(mask, {min:0, max:1, palette: ['white', 'red']}, 'mask');
         
     } else {
         // export parameter for yearly PML
-        var folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014'; //_bilinear
+        var folder_yearly = 'projects/pml_evapotranspiration/PML/V2/yearly'; //_bilinear
         var task;
         
         for (var year = year_begin; year <= year_end; year++){
