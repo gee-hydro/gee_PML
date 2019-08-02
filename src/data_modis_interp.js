@@ -103,12 +103,12 @@ var imgcol_his_1y = pkg_smooth.historyInterp(imgcol_his_1m, imgcol_hisavg_year ,
 var imgcol_out    = imgcol_his_1y; // final smoothed result
 var imgcol_out = imgcol_interp.filter(filter_date2).map(zipfun).select([1, 0]);
 
-var DEBUG = true
+var DEBUG = true;
 if (DEBUG) {
     print(imgcol_all.limit(3));
     // print(imgcol, imgcol_interp);
-    print(imgcol_hisavg_d8, imgcol_hisavg_month, imgcol_hisavg_year);
-    print(imgcol_his_d8, imgcol_his_1m, imgcol_his_1y);
+    print('historical imgcol', imgcol_hisavg_d8, imgcol_hisavg_month, imgcol_hisavg_year);
+    print('interped imgcol', imgcol_his_d8, imgcol_his_1m, imgcol_his_1y);
     // print(imgcol_his)
     // print(imgcol_input, imgcol_out)
 
@@ -133,13 +133,13 @@ var range      = [-180, -60, 180, 90], // keep consistent with modis data range
     crs        = 'SR-ORG:6974';
     // task = 'whit-4y';
 
-pkg_export.ExportImgCol(imgcol_out.limit(2), dateList, range, cellsize, type, folder, 
+pkg_export.ExportImgCol(imgcol_out, dateList.limit(2), range, cellsize, type, folder, 
     crs, prj.crsTransform);
 
 // print(imgcol_out.limit(2));
 // print(dateList);
 // pkg_export.ExportImgCol(emiss_interp, dateList, range, scale, drive, folder, crs);
-print(prj_albedo, prj_emiss)
+print(prj_albedo, prj_emiss);
 // pkg_export.ExportImgCol(imgcol_out.limit(10), dateList, range, cellsize, type, folder, 
 //     crs, prj.crsTransform);
 

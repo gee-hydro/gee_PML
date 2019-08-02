@@ -10,8 +10,8 @@ var pkg_vis    = require('users/kongdd/public:pkg_vis.js');
 // print(poly.geometry())
 /** Initial parameters for whittaker smoother */
 var lambda = 500;
-var year_begin = 2014,
-    year_end   = year_begin + 1,
+var year_begin = 2016,
+    year_end   = year_begin + 3,
     date_begin = ee.Algorithms.If(ee.Number(year_begin).eq(2002), '2002-07-01', year_begin.toString().concat('-01-01')),
     date_end   = year_end.toString().concat('-12-31');
     
@@ -156,7 +156,7 @@ function whit_imgcol(imgcol, order, lambda, iters) {
         var T_imgcol = false;
         if (T_imgcol){
             // second solution
-            imgcol_z = array2imgcol(z, nrow, 1, ['z'], dates);
+            imgcol_z = pkg_main.array2imgcol(z, nrow, 1, ['z'], dates);
             // print(imgcol_z);
             re = pkg_join.ImgColFun(imgcol.select(0), imgcol_z, pkg_join.Img_absdiff);
             // imgcolRegions(re, 're')
@@ -164,7 +164,7 @@ function whit_imgcol(imgcol, order, lambda, iters) {
         }else{
             // first solution
             re = z.subtract(ymat);
-            w  = pkg_smooth.modweight_bisquare_array(re, w);
+            w  = pkg_smooth.wBisquare_array(re, w);
             // imgRegions(re, 're')
         }
         // Map.addLayer(z, {}, 'z');
