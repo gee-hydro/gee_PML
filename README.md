@@ -69,6 +69,11 @@ You can clip regional data by polygon shapefile from `ee.ImageCollection`.
 Clip and export the regional data you need by the polygon shapefile you uploaded. [This is a little example](https://code.earthengine.google.com/10ea4750eaae29097b118022fbf60a57).
 
 
+## Updates
+
+* 2019-08-02: extend the time period to 2018
+
+
 ## **References:** 
 
 > [1].  Zhang, Y., Kong, D., Gan, R., Chiew, F.H.S., McVicar,
@@ -101,3 +106,9 @@ Clip and export the regional data you need by the polygon shapefile you uploaded
 > R., 2017. Google Earth Engine: Planetary-scale geospatial analysis for
 > everyone. Remote Sens. Environ. 202, 18–27.
 > https://doi.org/10.1016/j.rse.2017.06.031
+
+## Acknowledgements
+
+Keep in mind that this repository is released under a GPL2 license, which
+permits commercial use but requires that the source code (of derivatives) is
+always open even if hosted as a web service.

@@ -71,6 +71,7 @@ if (type === 'albedo'){
     zipfun = zip_emiss;
     prj = prj_emiss;
 }
+
 // imgcol_all      = ee.ImageCollection(imgcol_all.toList(1000, 0))
 //     .map(pkg_trend.add_dn(false, 8))
 ///////////////////////////////////////////////////////////////////

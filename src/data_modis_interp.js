@@ -2,9 +2,20 @@
 var imgcol_gpp = ee.ImageCollection("MODIS/006/MOD17A2H"),
     imgcol_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
+
 var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');
 var pkg_smooth = require('users/kongdd/public:Math/pkg_smooth.js');
 var pkg_export = require('users/kongdd/public:pkg_export.js');
+
+/** 
+ * This script is to fill gaps of MODIS Albedo, Emissivity with the methods of 
+ * nearest linear regression, (d8, monthly, yearly) historical average interpolation.
+ *
+ * Update for PML_V2 2018 images
+ * 
+ * 2019-08-02
+ * Dongdong Kong
+ */
 
 /** parameters */
 var range = [-180, -60, 180, 90];
@@ -22,12 +33,11 @@ var filter_date  = ee.Filter.date(date_begin, date_end);
 var filter_date2 = ee.Filter.date(date_begin.advance(nday, 'day'), date_end.advance(-nday, 'day'));
 
 
-////////////////////////////////////////////////////////////////////////////////
+/**  Aggregate Albedo from daily to 8-day ----------------------------------- */
 var Albedo_raw  = ee.ImageCollection('MODIS/006/MCD43A3')
         .select(['Albedo_WSA_shortwave']) //, ['albedo'], 'BRDF_Albedo_Band_Mandatory_Quality_shortwave'
         .map(pkg_trend.add_dn(true, 8));
 // Map.addLayer(Albedo_raw.limit(365), {}, 'albedo');
-
 
 var Albedo_d8 = pkg_trend.aggregate_prop(Albedo_raw, 'dn', 'median')
     //scale factor 0.001, no units;
@@ -51,25 +61,25 @@ var prj_emiss  = pkg_export.getProj(Emiss_d8); // prj_emiss.prj
 
 var dateList = ee.List(Emiss_d8.filter(filter_date2).aggregate_array('system:time_start'))
     .map(function(date){ return ee.Date(date).format('yyyy-MM-dd'); }).getInfo();
-/** common parameters */
-var type = 'emiss';
 
+/** common parameters ------------------------------------------------------- */
+var type = 'emiss';
 var imgcol_all, cellsize, folder, zipfun, prj;
 if (type === 'albedo'){
-    print('[running]', type);
     imgcol_all = Albedo_d8;
-    cellsize  = 1/240;
-    folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d_linear'; //Emiss_interp_8d
-    zipfun = zip_albedo;
-    prj = prj_albedo;
+    cellsize   = 1/240;
+    folder     = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d_linear'; //Emiss_interp_8d
+    zipfun     = zip_albedo;
+    prj        = prj_albedo;
 }else if (type === 'emiss'){
-    print('[running]', type);
     imgcol_all = Emiss_d8;
-    cellsize  = 1/120;
-    folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d'; //Emiss_interp_8d
-    zipfun = zip_emiss;
-    prj = prj_emiss;
+    cellsize   = 1/120;
+    folder     = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d'; //Emiss_interp_8d
+    zipfun     = zip_emiss;
+    prj        = prj_emiss;
 }
+print('[running]', type);
+
 // imgcol_all      = ee.ImageCollection(imgcol_all.toList(1000, 0))
 //     .map(pkg_trend.add_dn(false, 8))
 ///////////////////////////////////////////////////////////////////
@@ -81,26 +91,31 @@ var prop            = 'dn',
 
 // print(imgcol_input)
 // print(dateList);
-
 var imgcol_interp = pkg_smooth.linearInterp(imgcol_input, nday); //.combine(imgcol);
 
-var imgcol_hisavg_d8    = pkg_trend.aggregate_prop(imgcol_all.select(0), 'dn', 'median'), //.map(zip_albedo),
+var imgcol_hisavg_d8    = pkg_trend.aggregate_prop(imgcol_all.select(0), 'dn'   , 'median'), //.map(zip_albedo),
     imgcol_hisavg_month = pkg_trend.aggregate_prop(imgcol_all.select(0), 'Month', 'median'), //.map(zip_albedo),
-    imgcol_hisavg_year  = pkg_trend.aggregate_prop(imgcol_all.select(0), 'Year', 'median'); //.map(zip_albedo);
-
+    imgcol_hisavg_year  = pkg_trend.aggregate_prop(imgcol_all.select(0), 'Year' , 'median'); //.map(zip_albedo);
 
 var imgcol_his_d8 = pkg_smooth.historyInterp(imgcol_interp, imgcol_hisavg_d8   , 'dn');
 var imgcol_his_1m = pkg_smooth.historyInterp(imgcol_his_d8, imgcol_hisavg_month, 'Month');
 var imgcol_his_1y = pkg_smooth.historyInterp(imgcol_his_1m, imgcol_hisavg_year , 'Year');
+var imgcol_out    = imgcol_his_1y; // final smoothed result
+var imgcol_out = imgcol_interp.filter(filter_date2).map(zipfun).select([1, 0]);
 
-print(imgcol_all.limit(3));
-// print(imgcol, imgcol_interp);
-print(imgcol_hisavg_d8, imgcol_hisavg_month, imgcol_hisavg_year);
-print(imgcol_his_d8, imgcol_his_1m, imgcol_his_1y);
+var DEBUG = true
+if (DEBUG) {
+    print(imgcol_all.limit(3));
+    // print(imgcol, imgcol_interp);
+    print(imgcol_hisavg_d8, imgcol_hisavg_month, imgcol_hisavg_year);
+    print(imgcol_his_d8, imgcol_his_1m, imgcol_his_1y);
+    // print(imgcol_his)
+    // print(imgcol_input, imgcol_out)
 
-get_chart(imgcol_all.filter(filter_date), 'imgcol_all');
-get_chart(imgcol_interp, 'imgcol_interp');
-get_chart(imgcol_his_1y, 'imgcol_his_1y');
+    get_chart(imgcol_all.filter(filter_date), 'imgcol_all');
+    get_chart(imgcol_interp, 'imgcol_interp');
+    get_chart(imgcol_his_1y, 'imgcol_his_1y');    
+}
 
 // var imgcol_his_year  = pkg_smooth.historyInterp(imgcol_his_month, imgcol_hisavg_year , 'Year');
 // var imgcol_his    = historyInterp(imgcol_interp);
@@ -108,18 +123,19 @@ get_chart(imgcol_his_1y, 'imgcol_his_1y');
 // var emiss_interp  = imgcol_his.map(zip_emiss).select([1, 0]);
 // var imgcol_out  = imgcol_his.filter(filter_date2).map(zip_emiss).select([1, 0]);
 // var folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d'; 
-// print(imgcol_his)
-var imgcol_out = imgcol_interp.filter(filter_date2).map(zipfun).select([1, 0]);
 
-// print(imgcol_input, imgcol_out)
+/** EXPORT DATA ------------------------------------------------------------- */
 
-/** export data */
 var range      = [-180, -60, 180, 90], // keep consistent with modis data range
-    range_high = [-180, 60, 180, 90], //
+    range_high = [-180, 60, 180, 90],  //
     // cellsize   = 1 / 240,
     type       = 'asset',
     crs        = 'SR-ORG:6974';
     // task = 'whit-4y';
+
+pkg_export.ExportImgCol(imgcol_out.limit(2), dateList, range, cellsize, type, folder, 
+    crs, prj.crsTransform);
+
 // print(imgcol_out.limit(2));
 // print(dateList);
 // pkg_export.ExportImgCol(emiss_interp, dateList, range, scale, drive, folder, crs);
