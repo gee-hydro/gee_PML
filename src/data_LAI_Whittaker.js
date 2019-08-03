@@ -2,57 +2,43 @@
 var imgcol_lai = ee.ImageCollection("MODIS/006/MCD15A3H"),
     poly = ee.FeatureCollection("users/kongdd/shp/TP/TP_poly");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
-// var pkg_whit   = require('users/kongdd/pkgs:Math/Whittaker.js');
+/** 
+ * This script is to fill gaps of MODIS 4-day LAI with the methods of 
+ * weighted Whittaker with constant lambda
+ * 
+ * # 2018-04-25, Dongdong Kong (in pkgs/Math/Whittaker.js)
+ * lambda = 500 (or 700) for 2-3 (or 4) years 4-day LAI images
+ * 
+ * # 2019-08-02, Dongdong Kong
+ * Update for PML_V2 2018 images
+ *
+ * Copyright (c) 2019 Dongdong Kong
+ * 
+ * @references
+ * 1. Kong, D., Zhang, Y., Gu, X., & Wang, D. (2019). A robust method
+ *     for reconstructing global MODIS EVI time series on the Google Earth Engine.
+ *     *ISPRS Journal of Photogrammetry and Remote Sensing*, *155*(May), 13–24.
+ *     https://doi.org/10.1016/j.isprsjprs.2019.06.014
+ * 2. Zhang, Y., Kong, D., Gan, R., Chiew, F.H.S., McVicar, T.R., Zhang, Q., and 
+ *     Yang, Y.. (2019) Coupled estimation of 500m and 8-day resolution global 
+ *     evapotranspiration and gross primary production in 2002-2017. 
+ *     Remote Sens. Environ. 222, 165-182, https://doi:10.1016/j.rse.2018.12.031 
+ */
 var pkg_main   = require('users/kongdd/public:pkg_main.js');
-var pkg_smooth = require('users/kongdd/public:Math/pkg_smooth.js');
-var pkg_join   = require('users/kongdd/public:pkg_join.js');
 var pkg_vis    = require('users/kongdd/public:pkg_vis.js');
-// print(poly.geometry())
-/** Initial parameters for whittaker smoother */
-var lambda = 500;
-var year_begin = 2016,
-    year_end   = year_begin + 3,
-    date_begin = ee.Algorithms.If(ee.Number(year_begin).eq(2002), '2002-07-01', year_begin.toString().concat('-01-01')),
-    date_end   = year_end.toString().concat('-12-31');
-    
-print(date_begin, date_end);
-var imgcol_lai = imgcol_lai.filterDate(date_begin, date_end); //.select('Lai');
-// mask is really important for dimension consistency
-var mask       = imgcol_lai.select('Lai').mosaic().mask(); 
-var imgcol     = imgcol_lai;
+var pkg_whit   = require('users/kongdd/public:Math/pkg_whit.js');
 
-var palette = ['#570088', '#920057', '#CE0027', '#FF0A00', '#FF4500', '#FF8000', '#FFB100', '#FFD200', '#FFF200', '#C7EE03', '#70D209', '#18B80E', '#067F54', '#033FA9', '#0000FF'];
-var vis     = { min: 0.0, max: 50.0, palette: palette.reverse(), bands: 'Lai'};
-Map.addLayer(imgcol, vis, 'LAI');
-pkg_vis.grad_legend(vis, 'LAI*10');
-// print(imgcol);
-
-var iters = 2,
-    task  = 'whit_'.concat(year_begin).concat('_').concat(year_end);
-    
-var nrow  = imgcol.size(),
-    ncol  = iters, 
-    bands,
-    dates = ee.List(imgcol.aggregate_array('system:time_start'));
-
-var points = require('users/kongdd/public:data/flux_points.js').points;
-// points = points.limit(80);    
-var points_buf = points.map(function(f) {return ee.Feature(f).buffer(500)});
-var point = ee.Feature(points.first()).geometry();
-
-////////////////////////////////////////////////////////////////////////////
-
+/** GLOBAL FUNCTIONS -------------------------------------------------------- */
 function qc_LAI(img) {
     var FparLai_QC   = img.select('FparLai_QC');
     var FparExtra_QC = img.select('FparExtra_QC');
     
-    var qc_scf       = FparLai_QC.bitwiseAnd(224).divide(32); //bit5-7, 1110 0000, shift 5
-    
-    var qc_snow      = FparExtra_QC.bitwiseAnd(4).divide(4); //bit2, snow or ice
-    var qc_aerosol   = FparExtra_QC.bitwiseAnd(8).divide(8); //bit3 
-    var qc_cirrus    = FparExtra_QC.bitwiseAnd(16).divide(16); //bit4
-    var qc_cloud     = FparExtra_QC.bitwiseAnd(32).divide(32); //bit5
-    var qc_shadow    = FparExtra_QC.bitwiseAnd(64).divide(64); //bit6
+    var qc_scf       = pkg_main.getQABits(FparLai_QC, 5, 7); //bit5-7, 1110 0000, shift 5
+    var qc_snow      = pkg_main.getQABits(FparLai_QC, 2); //bit2, snow or ice
+    var qc_aerosol   = pkg_main.getQABits(FparLai_QC, 3); //bit3 
+    var qc_cirrus    = pkg_main.getQABits(FparLai_QC, 4); //bit4
+    var qc_cloud     = pkg_main.getQABits(FparLai_QC, 5); //bit5
+    var qc_shadow    = pkg_main.getQABits(FparLai_QC, 6); //bit6
    
     /**
      * items               | weights
@@ -71,141 +57,98 @@ function qc_LAI(img) {
         .rename(['Lai', 'w', 'qc_scf', 'qc_snow', 'qc_aerosol', 'qc_cirrus', 'qc_cloud', 'qc_shadow'])
         .copyProperties(img, img.propertyNames());
 }
+var date2str = function(x) { return ee.Date(x).format('YYYY_MM_dd'); };
+/** ------------------------------------------------------------------------- */
 
-////////////////////////////////////////////////////////////////
-var count = imgcol_lai.select('Lai').count();
-var temp  = count.eq(0).and(mask.not());
-// Map.addLayer(count, {}, 'count');
-// Map.addLayer(temp , {}, 'temp');
-// Map.addLayer(mask , {}, 'mask');
+// MAIN SCRIPT 
+{
+    /** Initial parameters for whittaker smoother --------------------------- */
+    var lambda = 500;
+    var year_begin = 2017,
+        year_end   = 2019, // year_beggin,
+        date_begin = year_begin == 2002 ? '2002-07-01' : year_begin.toString().concat('-01-01'),
+        date_end   = year_end.toString().concat('-12-31');
+    
+    print(date_begin, date_end);
+    var imgcol_lai = imgcol_lai.filterDate(date_begin, date_end); //.select('Lai');
+    // mask is really important for dimension consistency
+    var mask       = imgcol_lai.select('Lai').mosaic().mask(); 
+    var imgcol     = imgcol_lai;
+    
+    /** 1. pre-process mask NA values and init weights */
+    imgcol = imgcol.map(function(img) {
+        img = img.unmask(-1.0);
+        return ee.Image(qc_LAI(img)).updateMask(mask);
+    });
 
-imgcol = imgcol.map(function(img) {
-    img = img.unmask(-1.0);
-    return ee.Image(qc_LAI(img)).updateMask(mask);
-});
+    /** 2. Whittaker smoother ----------------------------------------------- */
+    var options_whit = {
+        order        : 2,    // difference order
+        wFUN         : pkg_whit.wBisquare_array, // weigths updating function
+        iters        : 2,    // Whittaker iterations
+        min_ValidPerc: 0,    // pixel valid ratio less then `min_ValidPerc`, is not smoothed.
+        min_A        : 0.02, // Amplitude A = ylu_max - ylu_min, points are masked if 
+                             // A < min_A. If ylu not specified, min_A not work
+        missing      : -0.05 // Missing value in band_sm are set to missing.
+        // matrixSolve = 1;  // whittaker, matrix solve option:
+        // 1:matrixSolve, 2:matrixCholeskyDecomposition, 3:matrixPseudoInverse 
+    };
+    
+    var whit    = pkg_whit.whit_imgcol(imgcol, options_whit, lambda);
+    var mat_zs  = whit.zs;
+    var mat_ws  = whit.ws;
+    
+    /** 3. convert 2d array into multi-bands -------------------------------- */
+    var datelist = ee.List(imgcol.aggregate_array('system:time_start')).map(date2str);
+    var ids = datelist.map(function(val){ return ee.String('b').cat(val); }); // print(ids);
+
+    var img_out = mat_zs.arraySlice(1, -1).arrayProject([0]).arrayFlatten([ids]);//only select the last iter
+    img_out = img_out.multiply(10).uint8();
+    
+    /** 4. EXPORT ----------------------------------------------------------- */
+    var pkg_export = require('users/kongdd/public:pkg_export.js');
+    var range      = [-180, -60, 180, 90], //
+        range_high = [-180,  60, 180, 90], //
+        cellsize   = 1 / 240,
+        type       = 'asset',
+        folder     = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit_4d',
+        crs        = 'SR-ORG:6974';
+    var task       = 'whit_'.concat(year_begin).concat('_').concat(year_end);
+    
+    var prj = pkg_export.getProj(imgcol);
+    // print(prj, img_out);
+    // Map.addLayer(img_out, {}, 'img_out');
+    pkg_export.ExportImg(img_out, task, range, cellsize, type, folder, prj.crs, prj.crsTransform);
+    // pkg_export.ExportImg(img_out, range_high, task.concat('_high'), scale, drive, folder, crs);
+    // pkg_export.ExportImgCol(img_out, undefined, range, scale, drive, folder, crs);
+}
+
+/** Visualization ----------------------------------------------------------- */
+var palette = ['#570088', '#920057', '#CE0027', '#FF0A00', '#FF4500', '#FF8000', '#FFB100', '#FFD200', '#FFF200', '#C7EE03', '#70D209', '#18B80E', '#067F54', '#033FA9', '#0000FF'];
+var vis     = { min: 0.0, max: 50.0, palette: palette.reverse(), bands: 'Lai'};
+Map.addLayer(imgcol, vis, 'LAI');
+pkg_vis.grad_legend(vis, 'LAI*10');
+// print(imgcol);
+// var nrow  = imgcol.size(), ncol  = iters,  bands,
+// var dates = ee.List(imgcol.aggregate_array('system:time_start'));
 // Map.addLayer(imgcol, {}, 'imgcol');
 // imgcol = imgcol.select('Lai');
-/**
- * A recursive function used to get D matrix of whittaker Smoother
- * 
- * @references
- * Paul H. C. Eilers, Anal. Chem. 2003, 75, 3631-3636
- */
-function diff_matrix(array, d) {
-    array = ee.Array(array); //confirm variable type
-    var diff = array.slice(0, 1).subtract(array.slice(0, 0, -1));
-    if (d > 1) {
-        diff = diff_matrix(diff, d - 1);
-    }
-    return diff;
-}
+// export_img(img_out, folder, task);
 
-/**
- * whitsm_ImgCol
- *
- * Whittaker Smooth function for ImageCollection
- *
- * @param  {ImageCollection} ImgCol The Input time-series.
- * @param  {Integer}         order  The order of difference.
- * @param  {Integer}         lambda The smooth parameter, a large value mean much smoother.
- * @return {ImageCollection}        [description]
- */
-function whit_imgcol(imgcol, order, lambda, iters) {
-    // iters  = iters  || 2;
-    // order  = order  || 2;
-    // lambda = lambda || 2;
-    if (typeof iters  === 'undefined') { iters = 2; }
-    if (typeof order  === 'undefined') { order = 2; }
-    if (typeof lambda === 'undefined') { lambda = 2; }
-
-    // print(imgcol);
-    
-    lambda = ee.Number(lambda);
-    // print(w.getInfo())
-    var n    = imgcol.size();
-    var ymat = imgcol.select(0).toArray(); //2d Column Image vector, .toArray(1)
-    var w    = imgcol.select(1).toArray(); //2d Column Image vector, .toArray(1)
-    // var w1 = pkg_smooth.setweights(imgcol.select(0));
-    
-    // Map.addLayer(ymat, {}, 'ymat');
-    
-    // print(w, w1, 'w & w1');
-    // imgRegions(ymat, points, 'y')
-    // 1. Whittaker matrix calculation 
-    var E = ee.Array.identity(n);
-    var D = diff_matrix(E, order);
-    var D2 = ee.Image(D.transpose().matrixMultiply(D).multiply(lambda));
-    
-    var W, C, z, re,
-        imgcol_z;
-    var zs = ymat, 
-        ws = w;
-    
-    for (var i = 1; i <= iters; i++) {
-        W  = ee.Image(w).matrixToDiag(); //ee.Image(E) ;//
-        // C = W.add(D2).matrixCholeskyDecomposition().arrayTranspose(); //already img array
-        // z  = C.matrixSolve(C.arrayTranspose().matrixSolve(w.multiply(ymat)));
-        // z  = ymat.where(mask, C.matrixSolve(C.arrayTranspose().matrixSolve(w.multiply(ymat))));
-        // var temp = W.add(D2);
-        // z  = R.matrixInverse().matrixMultiply(Q.matrixTranspose()).matrixMultiply(w.multiply(ymat));
-        z  = W.add(D2).matrixSolve(w.multiply(ymat));
-        // pkg_main.imgRegions(w, points, 'w');
-        // pkg_main.imgRegions(W, points, 'temp');
-        // pkg_main.imgRegions(z, points, 'z');
-        
-        var T_imgcol = false;
-        if (T_imgcol){
-            // second solution
-            imgcol_z = pkg_main.array2imgcol(z, nrow, 1, ['z'], dates);
-            // print(imgcol_z);
-            re = pkg_join.ImgColFun(imgcol.select(0), imgcol_z, pkg_join.Img_absdiff);
-            // imgcolRegions(re, 're')
-            w  = pkg_smooth.modweight_bisquare(re);
-        }else{
-            // first solution
-            re = z.subtract(ymat);
-            w  = pkg_smooth.wBisquare_array(re, w);
-            // imgRegions(re, 're')
-        }
-        // Map.addLayer(z, {}, 'z');
-        // imgRegions(w , 'w')
-        zs = zs.arrayCat(z, 1);
-        ws = ws.arrayCat(w, 1);
-    }
-    // 2. Image Array transform into ImgCol
-    // return ImgCol_whit;
-    return {zs:ee.Image(zs), ws:ee.Image(ws)}; //, C:C
-}
-
-var datelist = ee.List(imgcol.aggregate_array('system:time_start')).map(function(x) {
-    return ee.Date(x).format('YYYY_MM_dd');
-});
-
-var ids = datelist.map(function(val){
-    return ee.String('b').cat(val);
-});
-// print(ids);
-
-var whit    = whit_imgcol(imgcol, 2, lambda);
-var mat_zs  = whit.zs;
-var mat_ws  = whit.ws;
-
-var img_out = mat_zs.arraySlice(1, -1).arrayProject([0]).arrayFlatten([ids]);//only select the last iter
-img_out = img_out.multiply(10).uint8();
-// print(img_out);
-// BufferPoints(ImgCol, points, distance, reducer, scale, list, save, file, folder);
+/** ------------------------------------------------------------------------- */
 // var val = ee.Image(mat_out).reduceRegion({reducer:ee.Reducer.toList(), geometry:point, scale:500});
-//crs, crsTransform,
-var dict_whit = pkg_main.imgRegions(mat_zs, points);
+var points = require('users/kongdd/public:data/flux_points.js').points;
+// points = points.limit(80);    
+var points_buf = points.map(function(f) {return ee.Feature(f).buffer(500)});
+var point      = ee.Feature(points.first()).geometry();
+var dict_whit  = pkg_main.imgRegions(mat_zs, points);
 // print(dict_whit);
-
 // export_array(mat_zs, 'mat_out368');//points, 
 // Map.addLayer(mat_zs, {}, 'mat_zs');
 
 function export_array(mat, file){
     // mat = mat.arraySlice(1, -1);
     var val = imgRegions(mat, points, file); 
-    
     Export.table.toDrive({
         collection : val, //.flatten(),
         description: file,
@@ -213,13 +156,9 @@ function export_array(mat, file){
         fileFormat : 'GeoJSON' //GeoJSON, CSV
     });
 }
-        
-// var imgcol_whit = array2imgcol(whit.zs, nrow, ncol+1, bands, dates);
-// var imgcol_ws   = array2imgcol(whit.ws, nrow, ncol+1, bands, dates);
 
 var panel = ui.Panel();
-// panel.style().set('width', '600px');
-
+// panel.style().set('width', '600px');replace_mask
 var app = {
     show: function(){
         // basemap
@@ -233,28 +172,6 @@ var app = {
 };
 app.show();
 
-
-// imgcol_whit = imgcol_whit.arrayProject([0]).arrayFlatten([ids]); //.clip(mask);
-
-// Map.addLayer(imgcol     , {}, 'ImgCol');
-// Map.addLayer(imgcol_whit, {}, 'ImgCol_whit');
-// Map.addLayer(imgcol_ws  , {}, 'imgcol_ws');
-// Map.addLayer(imgcol_whit.mask(), {}, 'ImgCol_whit mask');
-
-// var p = ui.Chart.image.seriesByRegion({
-//     imageCollection: imgcol, 
-//     regions:points.limit(3),//ee.Feature(points.first()), 
-//     reducer: ee.Reducer.mean(), 
-//     band:0, 
-//     scale:500, 
-//     // xProperty,
-//     seriesProperty:'site'
-// }).setOptions({title: 'original'});
-// print(p);
-// print('d1');
-// print(imgcol_whit);
-
-
 function select_OnChange(value){
     var point = ee.Feature(points.filterMetadata('site', 'equals', value).first()).geometry(); //ee.Filter.eq('site', value)
     // print(point);
@@ -262,14 +179,11 @@ function select_OnChange(value){
 
     var arraylist = ee.Array(mat_zs.sample(point, 500).first().get('array')); 
     // var arraylist = ee.Array(ee.List(ee.Dictionary(dict_whit).get(value)).get(0));
-
-    //var p_whit = show_series(imgcol_whit, 'imgcol_whit', point),
+    // var p_whit = show_series(imgcol_whit, 'imgcol_whit', point),
         //p_ws   = show_series(imgcol_ws  , 'imgcol_ws', point);
     var p_whit = show_arrayseries(arraylist, 'imgcol_whit', point);
-    
     // var p_whit = show_series(imgcol_whit, 'imgcol_whit', point),
     //     p_ws   = show_series(imgcol_ws  , 'imgcol_ws', point);
-        
     // print(panel.widgets());
     // panel.widgets().set(1, p_ws);
     panel.widgets().set(1, p_whit);
@@ -291,22 +205,29 @@ function show_series(imgcol, title, region){
     return p;
 }
 
-function show_arrayseries(arraylist,title,region){
+function show_arrayseries(arraylist, title, region){
     if (typeof region === 'undefined') {
         region = ee.Feature(points.first());
     }
-    var Names = ['raw','iter1','iter2'];
+    // var Names = ['raw', Array(nrow-1).join().split(',').map(function(e, i) { return 'iter'.concat(i+1); })];
+    /** setting items name and point & line shape*/
+    var n = options_whit.iters;
+    var xs = pkg_main.seq_len(n+1);
+    var Names = xs.map(function(i) {return 'iter'.concat(i); }); 
+    Names[0] = 'raw';
+    
+    var series = xs.reduce(function(obj, i){ 
+        obj[i] = { lineWidth: 2, pointSize: 0}; return obj;
+    }, {});
+    series[0] = { lineWidth: 0, pointSize: 2};
+    // -------------------------------------------
     var p = ui.Chart.array.values({
         array: arraylist,
         axis : 0,
         xLabels: datelist,
     }).setOptions({
       title: title,
-      series: { 
-          0: { lineWidth: 0, pointSize: 2},
-          1: { lineWidth: 2, pointSize: 0 },
-          2: { lineWidth: 2, pointSize: 0 }
-      }}).setSeriesNames(Names);
+      series: series}).setSeriesNames(Names);
     return p;
 }
 
@@ -321,49 +242,50 @@ function InitSelect(IsPrint){
     var tool = ui.Select({ items: names, onChange: select_OnChange });
     panel.add(tool);
     tool.setValue(names[0]);
-    // if (IsPrint) {
-    //     print(tool);
-    // } else {
+    // if (IsPrint) { print(tool); } else {
     //     return tool;
     // }
 }
-
-var pkg_export = require('users/kongdd/public:pkg_export.js');
 
 /** designed to export regional (poly) data */
 function export_img(img, folder, task){
     // var val = imgRegions(mat, file); 
     Export.image.toAsset({
-          image : img,
+          image      : img,
           description: task,
-          assetId: folder.concat('/').concat(task), //projects/pml_evapotranspiration/
-          crs   : crs,
-          region: poly,
-          scale :500,
+          assetId    : folder.concat('/').concat(task), //projects/pml_evapotranspiration/
+          crs        : crs,
+          region     : poly,
+          scale      :500,
           // dimensions: dimensions,
-          maxPixels: 1e13
+          maxPixels  : 1e13
     });  
 }
 
-var range      = [-180, -60, 180, 90], //
-    range_high = [-180,  60, 180, 90], //
-    scale = 1 / 240,
-    drive = false,
-    folder = 'projects/pml_evapotranspiration/LAI_whit_4d',
-    crs = 'SR-ORG:6974';
-    // task = 'whit-4y';
-
-// Map.addLayer(img_out, {}, 'img_out');
-// pkg_export.ExportImg_deg(img_out, range     , task, scale, drive, folder, crs);
-// pkg_export.ExportImg_deg(img_out, range_high, task.concat('_high'), scale, drive, folder, crs);
-
-// export_img(img_out, folder, task);
-
-// print(img_out)
-// pkg_export.ExportImgCol(img_out, undefined, range, scale, drive, folder, crs);
+// var p = ui.Chart.image.seriesByRegion({
+//     imageCollection: imgcol, 
+//     regions:points.limit(3),//ee.Feature(points.first()), 
+//     reducer: ee.Reducer.mean(), 
+//     band:0, 
+//     scale:500, 
+//     // xProperty,
+//     seriesProperty:'site'
+// }).setOptions({title: 'original'});
+// print(p);
+// print('d1');
+// print(imgcol_whit);
 ////////////////////////////////////////////////////////////////////////////////
-
-exports = {
-    // whitsm_points: whitsm_points,
-    // whitsm_ImgCol: whitsm_ImgCol,
-};
+////////////////////////////////////////////////////////////////////////////////
+// var count = imgcol_lai.select('Lai').count();
+// var temp  = count.eq(0).and(mask.not());
+// Map.addLayer(count, {}, 'count');
+// Map.addLayer(temp , {}, 'temp');
+// Map.addLayer(mask , {}, 'mask');
+        
+// var imgcol_whit = pkg_main.array2imgcol(whit.zs, nrow, ncol+1, bands, dates);
+// var imgcol_ws   = pkg_main.array2imgcol(whit.ws, nrow, ncol+1, bands, dates);
+// imgcol_whit = imgcol_whit.arrayProject([0]).arrayFlatten([ids]); //.clip(mask);
+// Map.addLayer(imgcol     , {}, 'ImgCol');
+// Map.addLayer(imgcol_whit, {}, 'ImgCol_whit');
+// Map.addLayer(imgcol_ws  , {}, 'imgcol_ws');
+// Map.addLayer(imgcol_whit.mask(), {}, 'ImgCol_whit mask');

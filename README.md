@@ -81,28 +81,32 @@ Clip and export the regional data you need by the polygon shapefile you uploaded
 > resolution global evapotranspiration and gross primary production in 2002-2017.
 > Remote Sens. Environ. 222, 165-182, https://doi:10.1016/j.rse.2018.12.031 
 >
-> [2]. Zhang, Y., Peña-Arancibia, J.L., McVicar, T.R., Chiew, F.H.S., Vaze, J.,
+> [2]. Kong, D., Zhang, Y., Gu, X., & Wang, D. (2019). A robust method for 
+> reconstructing global MODIS EVI time series on the Google Earth Engine. 
+> ISPRS Journal of Photogrammetry and Remote Sensing*, *155*(May), 13–24. 
+> https://doi.org/10.1016/j.isprsjprs.2019.06.014
+>
+> [3]. Zhang, Y., Peña-Arancibia, J.L., McVicar, T.R., Chiew, F.H.S., Vaze, J.,
 > Liu, C., Lu, X., Zheng, H., Wang, Y., Liu, Y.Y., Miralles, D.G., Pan, M., 2016.
 > Multi-decadal trends in global terrestrial evapotranspiration and its
 > components. Sci. Rep. 6, 19124. https://doi.org/10.1038/srep19124 
 >
-> [3].
-> Zhang, Y., Leuning, R., Hutley, L.B., Beringer, J., McHugh, I., Walker, J.P., 
+> [4]. Zhang, Y., Leuning, R., Hutley, L.B., Beringer, J., McHugh, I., Walker, J.P., 
 > Using long-term water balances to parameterize surface conductances and
 > calculate evaporation at 0.05°spatial resolution. Water Resour. Res. 46.
 > https://doi.org/10.1029/2009WR008716  
 >
-> [4]. Leuning, R., Zhang, Y.Q.,
+> [5]. Leuning, R., Zhang, Y.Q.,
 > Rajaud, A., Cleugh, H., Tu, K., 2008. A simple surface conductance model to
 > estimate regional evaporation using MODIS leaf area index and the Penman-
 > Monteith equation. Water Resour. Res. 44. https://doi.org/10.1029/2007WR006562
 >
-> [5]. Gan, R., Zhang, Y., Shi, H., Yang, Y., Eamus, D., Cheng, L., Chiew,
+> [6]. Gan, R., Zhang, Y., Shi, H., Yang, Y., Eamus, D., Cheng, L., Chiew,
 > F.H.S., Yu, Q., 2018. Use of satellite leaf area index estimating
 > evapotranspiration and gross assimilation for Australian ecosystems.
 > Ecohydrology. e1974. https://doi.org/10.1002/eco.1974
-> 
-> [6]. Gorelick, N., Hancher, M., Dixon, M., Ilyushchenko, S., Thau, D., Moore,
+>
+> [7]. Gorelick, N., Hancher, M., Dixon, M., Ilyushchenko, S., Thau, D., Moore,
 > R., 2017. Google Earth Engine: Planetary-scale geospatial analysis for
 > everyone. Remote Sens. Environ. 202, 18–27.
 > https://doi.org/10.1016/j.rse.2017.06.031

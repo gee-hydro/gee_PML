@@ -9,36 +9,43 @@ var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /**
  * PML_V2 (Penman-Monteith-Leuning) model 
- * 
- * @reference
- * 1. Gan, R., Zhang, Y., Shi, H., Yang, Y., Eamus, D., Cheng, L., Chiew, F.H.S., 
- *     Yu, Q., 2018. Use of satellite leaf area index estimating evapotranspiration 
- *     and gross assimilation for Australian ecosystems. Ecohydrology e1974. 
- *     https://doi.org/10.1002/eco.1974
- * 2. Zhang, Y., Peña-Arancibia, J.L., McVicar, T.R., Chiew, F.H.S., Vaze, J., 
- *     Liu, C., Lu, X., Zheng, H., Wang, Y., Liu, Y.Y., Miralles, D.G., Pan, M. (2016), 
- *     Multi-decadal trends in global terrestrial evapotranspiration and its 
- *     components. Scientific Reports, 6(1).
- * 3. Zhang, Y., R. Leuning, L. B. Hutley, J. Beringer, I. McHugh, and J. P. Walker (2010), 
- *     Using long‐term water balances to parameterize surface conductances and 
- *     calculate evaporation at 0.05° spatial resolution, Water Resour. Res., 
- *     46, W05512, doi:10.1029/2009WR008716.
- * 4. Leuning, R., Y. Q. Zhang, A. Rajaud, H. Cleugh, and K. Tu (2008), 
- *     A simple surface conductance model to estimate regional evaporation using 
- *     MODIS leaf area index and the Penman-Monteith equation, Water Resour. Res., 
- *     44, W10419, doi:10.1029/2007WR006562.
  *
  * @usage:
  * var pkg_PML = require('users/kongdd/pkgs:Math/PML_v2.js');
+ *
+ * ## UPDATES: 
+ * # 30 April, 2018; kongdd
+ * # 09 Sep  , 2018; kongdd
+ *     * Add trend inspection module
+ * # 03 Aug  , 2018; kongdd
+ *     * Update PML_V2 images to 2019
  * 
- * Dongdong Kong; 30 April, 2018
- * 
- * Update 09 Sep, 2018
- * -------------------
- * 1. Add trend inspection module
- * 
+ * @reference
+ * 1. Zhang, Y., Kong, D., Gan, R., Chiew, F.H.S., McVicar, T.R., Zhang, Q., and 
+ *     Yang, Y.. (2019) Coupled estimation of 500m and 8-day resolution global 
+ *     evapotranspiration and gross primary production in 2002-2017. 
+ *     Remote Sens. Environ. 222, 165-182, https://doi:10.1016/j.rse.2018.12.031 
+ * 2. Kong, D., Zhang, Y., Gu, X., & Wang, D. (2019). A robust method
+ *     for reconstructing global MODIS EVI time series on the Google Earth Engine.
+ *     *ISPRS Journal of Photogrammetry and Remote Sensing*, *155*(May), 13–24.
+ *     https://doi.org/10.1016/j.isprsjprs.2019.06.014
+ * 3. Gan, R., Zhang, Y., Shi, H., Yang, Y., Eamus, D., Cheng, L., Chiew, F.H.S., 
+ *     Yu, Q., 2018. Use of satellite leaf area index estimating evapotranspiration 
+ *     and gross assimilation for Australian ecosystems. Ecohydrology e1974. 
+ *     https://doi.org/10.1002/eco.1974
+ * 4. Zhang, Y., Peña-Arancibia, J.L., McVicar, T.R., Chiew, F.H.S., Vaze, J., 
+ *     Liu, C., Lu, X., Zheng, H., Wang, Y., Liu, Y.Y., Miralles, D.G., Pan, M. (2016), 
+ *     Multi-decadal trends in global terrestrial evapotranspiration and its 
+ *     components. Scientific Reports, 6(1).
+ * 5. Zhang, Y., R. Leuning, L. B. Hutley, J. Beringer, I. McHugh, and J. P. Walker (2010), 
+ *     Using long‐term water balances to parameterize surface conductances and 
+ *     calculate evaporation at 0.05° spatial resolution, Water Resour. Res., 
+ *     46, W05512, doi:10.1029/2009WR008716.
+ * 6. Leuning, R., Y. Q. Zhang, A. Rajaud, H. Cleugh, and K. Tu (2008), 
+ *     A simple surface conductance model to estimate regional evaporation using 
+ *     MODIS leaf area index and the Penman-Monteith equation, Water Resour. Res., 
+ *     44, W10419, doi:10.1029/2007WR006562.
  */ 
-
 
 /** LOAD REQUIRED PACKAGES */
 var pkg_mov    = require('users/kongdd/public:Math/pkg_movmean.js'); //movmean
