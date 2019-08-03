@@ -7,3 +7,8 @@
 2. LAI重新进行插值: Whittaker smoother
 
 3. 更新PML_V2产品
+
+# rm 
+
+ Albedo_interp_8d_hisavg
+ 
