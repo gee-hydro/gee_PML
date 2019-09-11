@@ -113,8 +113,8 @@ var date2str = function(date) { return ee.Date(date).format('yyyy-MM-dd'); };
 var IS_RUN = true;
 if (IS_RUN){
     // aggregate 3hourly gldas into 8day and save into assets
-    var year_begin = 2002,
-        year_end   = 2004; 
+    var year_begin = 2019,
+        year_end   = 2019; 
     
     var date_begin = ee.Date(year_begin.toString().concat("-01-01")),
         date_end   = ee.Date(year_end.toString().concat("-12-31"));

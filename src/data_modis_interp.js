@@ -22,8 +22,8 @@ var range = [-180, -60, 180, 90];
 var bound = ee.Geometry.Rectangle(range, 'EPSG:4326', false);
 
 var nday       = 32; // interpolation searching 32d in the left and right
-var year_begin = 2018,
-    year_end   = year_begin + 1;
+var year_begin = 2019,
+    year_end   = year_begin + 0;
 
 var md_begin = (year_begin === 2002) ? '-07-04' : '-01-01';
 var date_begin = ee.Date(year_begin.toString().concat(md_begin)).advance(-nday, 'day'),

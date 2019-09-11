@@ -1,5 +1,5 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_v21_8day"),
+var gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_V21_8day_V2"),
     imgcol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/ET_Complementary/GLDAS_v21_8day"),
     imgcol_emiss = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d"),
     albedo_daily = ee.ImageCollection("MODIS/006/MCD43A3"),
@@ -28,16 +28,17 @@ function filter_col(imgcol, yearBegin, yearEnd){
     // retrn 
 }
 
-var yearBegin = 1980,
-    yearEnd   = 2018;
-    
+var yearBegin = 2002,
+    yearEnd   = 2019;
     
 // filter_col(imgcol_v2, yearBegin, yearEnd);
 // filter_col(imgcol_v1, yearBegin, yearEnd);
 
-// filter_col(imgcol_albedo2, yearBegin, yearEnd);
-// filter_col(pml_v1, yearBegin, yearEnd);
-// filter_col(imgcol_spot, yearBegin, yearEnd);
+filter_col(imgcol_albedo2, yearBegin, yearEnd);
+filter_col(imgcol_emiss, yearBegin, yearEnd);
+
+filter_col(gldas, yearBegin, yearEnd);
+
 // filter_col(imgcol_watch, yearBegin, yearEnd);
 // filter_col(PML_014, yearBegin, yearEnd);
 var imgcol = PML_014;
@@ -46,9 +47,8 @@ var img = imgcol.first();
 var date = imgcol.aggregate_array('system:index');
 var size = imgcol.aggregate_array('system:asset_size');
 
-var dict = ee.Dictionary.fromLists(date, size);
-
-print(dict);
+// var dict = ee.Dictionary.fromLists(date, size);
+// print(dict);
 
 
 // print(imgcol_emiss);
