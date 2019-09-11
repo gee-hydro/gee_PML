@@ -57,10 +57,11 @@ var pkg_export = require('users/kongdd/public:pkg_export.js');
 
 var prj = pkg_export.getProj(imgcol_land);
 
-var I_interp    = true;
-// `meth_interp` is used to resample meteometeorological forcing into high-resolution
+var I_interp    = true; // whether Interpolate MODIS LAI, Emissivity and Albedo
+
+// `meth_interp` is used to resample  into high-resolution
 // not suggest 'biculic'. bicubic can't constrain values in reasonable boundary.
-var meth_interp = 'bilinear'; // or 'bicubic'
+var meth_interp = 'bilinear'; // or 'bicubic'; for meteometeorological forcing spatial interpolatation
 var filter_date_all = ee.Filter.date('2002-07-01', '2017-12-31');
 
 /**
@@ -130,9 +131,7 @@ function print_1th(imgcol){
 }
 
 if (I_interp){
-    var imgcol_lai = ee.ImageCollection( imgcol_lai_4d.toList(10).map(function(img){
-        return pkg_main.bandsToImgCol(img, 'LAI');
-    }).flatten() )
+    var imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').imgcol_LAI
         .map(function(img){ return img.multiply(0.1).copyProperties(img, img.propertyNames());}); //scale factor 0.1
     imgcol_lai   = ee.ImageCollection(imgcol_lai.toList(2000));
 
@@ -201,6 +200,7 @@ function PML_INPUTS_d8(begin_year, end_year){
     //     .map(function(img){ return pkg_main.setImgProperties(img, miss_date); })
     //     .sort("system:time_start");
     
+    /** 4-day to 8-day */
     var LAI_d4  = imgcol_lai.filter(filter_date);//.merge(lai_miss);
     LAI_d4      = LAI_d4.map(pkg_trend.add_dn(true, 8));
     

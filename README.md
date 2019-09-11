@@ -32,6 +32,8 @@ and 8-day, and range from -60°S to 90°N.
 | ET_water | evaporation from water body, snow and ice                   | mm/d  |
 | qc       | quality control variable for albedo and surface emissivity. | -     |
 
+global CO2: https://data.globalchange.gov/dataset/noaa-cmdl-co2_mm_gl
+
 ## Data product 
 
 **Table 1**. `PML_V1` and `PML_V2 ` bands information (`PML_V1 ` have no GPP band, other
