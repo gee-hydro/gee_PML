@@ -29,6 +29,7 @@ var md_begin = (year_begin === 2002) ? '-07-04' : '-01-01';
 var date_begin = ee.Date(year_begin.toString().concat(md_begin)).advance(-nday, 'day'),
     date_end   = ee.Date(year_end.toString().concat('-12-31')).advance(nday, 'day');
     
+var filter_all   = ee.Filter.calendarRange(2000, 2018, 'year'); // period for historical interp
 var filter_date  = ee.Filter.date(date_begin, date_end);
 var filter_date2 = ee.Filter.date(date_begin.advance(nday, 'day'), date_end.advance(-nday, 'day'));
 
@@ -88,6 +89,8 @@ print('[running]', type);
 var prop            = 'dn',
     imgcol_input    = imgcol_all.filter(filter_date),
     imgcol_his_mean = pkg_trend.aggregate_prop(imgcol_all.select(0), prop, 'median');
+
+imgcol_all = imgcol_all.filter(filter_all);
 
 // print(imgcol_input)
 // print(dateList);

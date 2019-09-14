@@ -12,3 +12,8 @@
 
  Albedo_interp_8d_hisavg
  
+ GLDAS     : 2019-07-28
+ Emissivity: (783) 2019-07-12 
+ Albedo    : (784) 2019-07-20
+
+2007: 36
