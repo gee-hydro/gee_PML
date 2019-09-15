@@ -92,9 +92,9 @@ var date2str = function(x) { return ee.Date(x).format('YYYY_MM_dd'); };
         crs        = 'SR-ORG:6974';
     var task       = 'whit_'.concat(year_begin).concat('_').concat(year_end);
     
-    var prj_org = pkg_export.getProj(imgcol_lai); 
+    var prj     = pkg_export.getProj(imgcol_lai); 
     var options = {
-        crsTransform: prj_org.crsTransform, 
+        crsTransform: prj.crsTransform, 
         folder: "projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit2018", 
         tile_nx: 5, 
         tile_ny: 2
@@ -102,10 +102,10 @@ var date2str = function(x) { return ee.Date(x).format('YYYY_MM_dd'); };
     print(options, 'options');
     var range     = [-180, -60, 180, 90];
     // range = [70, 15, 140, 25];
-    // print(prj, img_out);
+    print(prj, img_out);
     // Map.addLayer(img_out, {}, 'img_out');
-    exportTiles(img_out, '2018_lambda50', range, options);
-    // pkg_export.ExportImg(img_out, task, range, cellsize, type, folder, prj.crs, prj.crsTransform);
+    // exportTiles(img_out, '2018_lambda50', range, options);
+    pkg_export.ExportImg(img_out, task, range, cellsize, type, folder, prj.crs, prj.crsTransform);
     // pkg_export.ExportImg(img_out, range_high, task.concat('_high'), scale, drive, folder, crs);
     // pkg_export.ExportImgCol(img_out, undefined, range, scale, drive, folder, crs);
 }
