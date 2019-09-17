@@ -65,32 +65,19 @@ if (V2) {
     // var WUE = annual.expression('b("GPP") / b("Ec")').rename('WUE');    
 }
 
-var vis_et  = {min: 100, max: 1600 , palette:pkg_vis.colors.RdYlBu[11]},
-    vis_gpp = {min: 100, max: 3700 , palette:pkg_vis.colors.RdYlGn[11]};
-    
+var p = require('users/kongdd/gee_PML:Figs/legend.js');
+
 /** visualization parameters for EVI */
-var palette = ['#570088', '#920057', '#CE0027', '#FF0A00', '#FF4500', '#FF8000', '#FFB100', '#FFD200', '#FFF200', '#C7EE03', '#70D209', '#18B80E', '#067F54', '#033FA9', '#0000FF'];
-var vis_wue = { min: 0.0, max: 4.0, palette: palette};
-var vis_per = { min: 0.0, max: 20 , palette: palette, bands: 'per'};
-
-var vis_per = { min: 0, max: 100 , palette: palette, bands: 'per'};
-
-var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP', false); //(gC m^-2 y^-1)
-var lg_et   = pkg_vis.grad_legend(vis_et , 'ET' , false);
-var lg_wue  = pkg_vis.grad_legend(vis_wue, 'WUE', false);
-var lg_perc = pkg_vis.grad_legend(vis_per, 'percentage', false);
-
-Map.addLayer(annual.select("GPP"), vis_gpp, 'annual average GPP');
-Map.addLayer(ET    , vis_et , 'annual average ET');
+Map.addLayer(annual.select("GPP"), p.vis.gpp, 'annual average GPP');
+Map.addLayer(ET                  , p.vis.et , 'annual average ET');
 // Map.addLayer(ET_v1, vis_et , 'annual average ET PML_v1');
 // pkg_vis.grad_legend(vis_et, 'ET', 'ET', true);
-Map.addLayer(WUE   , vis_wue, 'annual average WUE');
-
+Map.addLayer(WUE   , p.vis.wue, 'annual average WUE');
 // Map.addLayer(per_Ei   , vis_per, 'per_Ei');
 // Map.addLayer(per_Es   , vis_per, 'per_Es');
-Map.addLayer(per_Ec   , vis_per, 'per_Ec');
+Map.addLayer(per_Ec   , p.vis.perc, 'per_Ec');
 
-pkg_vis.add_lgds([lg_gpp, lg_et, lg_wue, lg_perc]);
+pkg_vis.add_lgds([p.lg.gpp, p.lg.et, p.lg.wue, p.lg.perc]);
 
 // 1. try to Export to drive
 var scale = 1/240,
@@ -141,7 +128,7 @@ pkg_export.ExportImg(annual2, 'PMLv2_Annual_average_v014_'.concat(1/cellsize),
     
 // export_image(annual_v1    , 'PMLv1_Annual_average');
 // 2. try to Export video
-WUE = WUE.visualize(vis_wue);
+WUE = WUE.visualize(p.vis.wue);
 
 var imgcol = ee.ImageCollection([ET, GPP, WUE]);
 // print(imgcol);

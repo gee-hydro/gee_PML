@@ -4,7 +4,7 @@ var pml_v1_yearly = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTP
     img_lai = ee.Image("MODIS/006/MCD15A3H/2002_07_04"),
     pml_v1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day"),
     pml_v2 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day"),
-    pml_v2_yearly_v013 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v013"),
+    pml_v2_yearly_v014 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014"),
     pml_v2_yearly_v012 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /** 

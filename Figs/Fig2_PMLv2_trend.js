@@ -2,11 +2,10 @@
 var imgcol_v011 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly"),
     imgcol_v014 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
-var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
 var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
-
-var vis_slp = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"]};
-var lg_slp  = pkg_vis.grad_legend(vis_slp, 'Trend (mm -1y)', false); // gC m-2 y-2
+var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
+var p         = require('users/kongdd/gee_PML:Figs/legend.js');
+var pkg_ET    = require('users/kongdd/gee_PML:src/pkg_ET.js');
 
 // multiple panel map
 var maps = pkg_vis.layout(2);
@@ -23,10 +22,7 @@ var options = {
         
 maps.forEach(function(value, i) {
     var imgcol = imgcols[i];
-    imgcol = imgcol.map(function(img){
-        var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename("ET");
-        return img.addBands(ET);
-    });
+    imgcol = imgcol.map(pkg_ET.add_ETsum);
     var img = pkg_trend.imgcol_trend(imgcol, 'ET', true);
 
     // var img = imgcol.first().select('GPP');
@@ -34,8 +30,8 @@ maps.forEach(function(value, i) {
     
     var map = maps[i];
     map.setControlVisibility(options);
-    map.addLayer(img.select('slope'), vis_slp, 'gpp');
+    map.addLayer(img.select('slope'), p.vis.slp_gpp, 'gpp');
     map.widgets().set(3, ui.Label(labels[i], lab_style));
 });
 
-maps[0].add(lg_slp);
+maps[0].add(p.lg.slp_gpp);

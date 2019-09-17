@@ -134,18 +134,18 @@ function print_1th(imgcol){
 
 if (I_interp){
     var imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').smoothed
-        .map(function(img){ return img.multiply(0.1).toFloat().copyProperties(img, img.propertyNames());}); //scale factor 0.1
+        .map(function(img){ return img.multiply(0.1).copyProperties(img, img.propertyNames());}); //scale factor 0.1
     imgcol_lai   = ee.ImageCollection(imgcol_lai.toList(2000));
 
     imgcol_emiss = ee.ImageCollection(imgcol_emiss.toList(1000))
         .map(function(img) {
-            var emiss = img.select(0).expression('b() * 0.002 + 0.49').toFloat(); //.toUint8()
+            var emiss = img.select(0).expression('b() * 0.002 + 0.49'); //.toFloat(); //.toUint8()
             return img.select('qc').addBands(emiss);
         }).select([1, 0], ['Emiss', 'qc']);
 
     imgcol_albedo = ee.ImageCollection(imgcol_albedo.toList(1000))
         .map(function(img) {
-            var albedo = img.select(0).multiply(0.001).toFloat();
+            var albedo = img.select(0).multiply(0.001); //.toFloat();
             return img.select(1).addBands(albedo);
         }).select([1, 0], ['Albedo', 'qc']);//scale factor 0.001, no units;
     
@@ -730,7 +730,7 @@ if (exec) {
     // folder   = "projects/pml_evapotranspiration/PML/bugs";
     
     var year       = 2018, 
-        year_begin = 2019, 
+        year_begin = 2018, 
         year_end   = year_begin + 0, //year_begin + 3,
         save  = true, //global param called in PML_main
         debug = false;

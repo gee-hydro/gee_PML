@@ -38,10 +38,12 @@ filter_col(imgcol_albedo2, yearBegin, yearEnd);
 filter_col(imgcol_emiss, yearBegin, yearEnd);
 
 filter_col(gldas, yearBegin, yearEnd);
+filter_col(PML_014, 2018, yearEnd);
 
 // filter_col(imgcol_watch, yearBegin, yearEnd);
 // filter_col(PML_014, yearBegin, yearEnd);
 var imgcol = PML_014;
+
 var img = imgcol.first();
 
 var date = imgcol.aggregate_array('system:index');
