@@ -1,6 +1,5 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var imgcol_v011 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly"),
-    imgcol_v014 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014");
+var imgcol_v014 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
 var pkg_vis   = require('users/kongdd/public:pkg_vis.js');

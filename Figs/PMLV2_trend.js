@@ -1,13 +1,12 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var ImgCol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_v21_8day"),
-    imgcol_LAI = ee.ImageCollection("MODIS/006/MCD15A3H"),
+var imgcol_LAI = ee.ImageCollection("MODIS/006/MCD15A3H"),
     imgcol_VI = ee.ImageCollection("MODIS/006/MOD13A1"),
     imgcol_gpp_mod = ee.ImageCollection("MODIS/006/MOD17A2H"),
     imgcol_v1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly"),
-    imgcol_v2_yearly_v013 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v013"),
     imgcol_v2_yearly_v014 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014"),
     imageCollection = ee.ImageCollection("CIESIN/GPWv4/population-density");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
+
 
 var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
 var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');

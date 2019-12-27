@@ -1,11 +1,11 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165830543]),
-    ImgCol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_v21_8day"),
     imgcol_albedo = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d_v2"),
     imgcol_emiss = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d"),
     imgcol_lai_4d = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit_4d"),
     imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
-    co2 = ee.FeatureCollection("projects/pml_evapotranspiration/PML_INPUTS/co2_mm_gl_2002-2017_8day");
+    co2 = ee.FeatureCollection("projects/pml_evapotranspiration/PML_INPUTS/co2_mm_gl_2002-2019_8day"),
+    ImgCol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_V21_8day_V2");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /**
  * PML_V2 (Penman-Monteith-Leuning) model 
@@ -56,7 +56,7 @@ var I_interp    = true;
 // `meth_interp` is used to resample meteometeorological forcing into high-resolution
 // not suggest 'biculic'. bicubic can't constrain values in reasonable boundary.
 var meth_interp = 'bilinear'; // or 'bicubic'
-var filter_date_all = ee.Filter.date('2002-07-01', '2017-12-31');
+var filter_date_all = ee.Filter.date('2002-07-01', '2018-12-31');
 
 /**
 MODIS 005 IGBP land cover code
@@ -122,6 +122,7 @@ var ImgCol_co2 = co2.toList(co2.size()).map(function(f){
 });
 ImgCol_co2 = ee.ImageCollection(ImgCol_co2).select([0], ['co2'])
     .filter(filter_date_all);
+  
 ImgCol_gldas = ImgCol_gldas.filter(filter_date_all);
 ImgCol_gldas = pkg_join.SaveBest(ImgCol_gldas, ImgCol_co2);
 
@@ -232,7 +233,9 @@ function PML_INPUTS_d8(begin_year, end_year){
         });
     }
     
+    
     var gldas_input = ImgCol_gldas.filter(filter_date);
+    // print(gldas_input);
     if (meth_interp === 'bilinear' || meth_intterp === 'bicubic'){
         gldas_input = gldas_input.map(function(img){
             return img.resample(meth_interp).copyProperties(img, img.propertyNames());
@@ -625,6 +628,9 @@ function PML(year, is_PMLV2) {
      */
     function PML_period(INPUTS){
         var len = INPUTS.size();
+        print(len)
+        print(INPUTS)
+        
         /** 2. ImgsRaw: ['Eeq', 'Evp', 'Es_eq', 'Eca', 'Ecr', 'Ei', 'Pi'] */
         var PML_ImgsRaw = INPUTS.map(PML_daily).sort("system:time_start");
 
@@ -742,8 +748,8 @@ if (exec) {
     }
 
     var year  = 2003,
-        year_begin = 2003, 
-        year_end   = year_begin + 4, //year_begin + 3,
+        year_begin = 2018, 
+        year_end   = year_begin + 1, //year_begin + 3,
         save  = true, //global param called in PML_main
         debug = false;
 
@@ -782,19 +788,21 @@ if (exec) {
         // var mask = img.select('Ec').expression('b() > 1e5 || b() < 0');
         // Map.addLayer(img_year.select('GPP'), vis_gpp, 'img_year');
         
-        var imgcol_year = years.map(function(year){
+        // var imgcol_year = years.map(function(year){
+        var year = 2018;
             year = ee.Number(year);
             var imgcol_PML = PML(year, is_PMLV2);
+            print(imgcol_PML);
             
             var begin_date = ee.Date.fromYMD(year,1,1);
             var task = begin_date.format('YYYY-MM-dd'); //.getInfo();
             var ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
             
-            var img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
+            var imgcol_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
                 .set('system:time_start', begin_date.millis())
                 .set('system:id', task);
-            return img_year;
-        });
+            // return img_year;
+        // });
         
         imgcol_year = ee.ImageCollection(imgcol_year);
         
@@ -829,6 +837,8 @@ if (exec) {
             ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
             
             imgcol_PML = PML(year, is_PMLV2);
+            print(imgcol_PML);
+            
             img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
                 .set('system:time_start', begin_date.millis())
                 .set('system:id', task);
