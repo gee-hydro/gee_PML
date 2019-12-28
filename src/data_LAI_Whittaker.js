@@ -83,18 +83,22 @@ var date2str = function(x) { return ee.Date(x).format('YYYY_MM_dd'); };
     Map.addLayer(img_out, {}, 'img_out')
 
     /** 4. EXPORT ----------------------------------------------------------- */
-    var pkg_export = require('users/kongdd/public:pkg_export.js');
+    var pkg_export = require('users/kongdd/public:pkg_export2.js');
     var range      = [-180, -60, 180, 90], //
-        range_high = [-180,  60, 180, 90], //
-        cellsize   = 1 / 240,
-        type       = 'asset',
-        folder     = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit_4d',
-        crs        = 'SR-ORG:6974';
-    var task       = 'whit_'.concat(year_begin).concat('_').concat(year_end);
-    
-    var prj     = pkg_export.getProj(imgcol_lai); 
+        range_high = [-180,  60, 180, 90]; //
+
+    var prj = pkg_export.getProj(imgcol_lai);
     var options = {
-        crsTransform: prj.crsTransform, 
+        range        : [-180, -60, 180, 90],
+        cellsize     : 1 / 240, 
+        type         : 'asset',
+        folder       : 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit_4d',
+        crs          : 'SR-ORG:6974',
+        crsTransform : prj.crsTransform, 
+    }
+        
+    var task       = 'whit_'.concat(year_begin).concat('_').concat(year_end);    
+    var options2 = {
         folder: "projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit2018", 
         tile_nx: 5, 
         tile_ny: 2
@@ -105,7 +109,7 @@ var date2str = function(x) { return ee.Date(x).format('YYYY_MM_dd'); };
     print(prj, img_out);
     // Map.addLayer(img_out, {}, 'img_out');
     // exportTiles(img_out, '2018_lambda50', range, options);
-    pkg_export.ExportImg(img_out, task, range, cellsize, type, folder, prj.crs, prj.crsTransform);
+    pkg_export.ExportImg(img_out, task, options);
     // pkg_export.ExportImg(img_out, range_high, task.concat('_high'), scale, drive, folder, crs);
     // pkg_export.ExportImgCol(img_out, undefined, range, scale, drive, folder, crs);
 }

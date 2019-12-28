@@ -6,7 +6,7 @@ var imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1");
  * 
  * Aggregate into yearly
  */
-var pkg_export = require('users/kongdd/public:pkg_export.js');
+var pkg_export = require('users/kongdd/public:pkg_export2.js');
 var imgcol_PMLV2_v015_8d = ee.ImageCollection('projects/pml_evapotranspiration/PML/V2/8day');
 
 
@@ -15,16 +15,16 @@ var imgcol_years = aggregateToYearly(imgcol_PMLV2_v015_8d, 2003, 2018, 0.01, tru
 var exec = true;
 
 var prj = pkg_export.getProj(imgcol_land);
-var range     = [-180, -60, 180, 90],
-    bounds    = ee.Geometry.Rectangle(range, 'EPSG:4326', false), //[xmin, ymin, xmax, ymax]
-    cellsize  = 1 / 240, //1/240,
-    type      = 'asset',
-    crs       = 'SR-ORG:6974', //projects/pml_evapotranspiration
-    folder    = 'projects/pml_evapotranspiration/PML/V2/yearly',
-    crsTransform = prj.crsTransform;
-
+var options = {
+    range        : [-180, -60, 180, 90],
+    cellsize     : 1 / 240, //1/240,
+    type         : 'asset',
+    crs          : 'SR-ORG:6974', //projects/pml_evapotranspiration
+    folder       : 'projects/pml_evapotranspiration/PML/V2/yearly',
+    crsTransform : prj.crsTransform
+};
 // Map.addLayer(imgcol_years, {}, 'yearly');
-pkg_export.ExportImgCol(imgcol_years, null, range, cellsize, type, folder, crs, crsTransform);
+pkg_export.ExportImgCol(imgcol_years, null, options);
 
 
 /** MAIN FUNCTIONS ---------------------------------------------------------- */

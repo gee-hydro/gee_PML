@@ -142,9 +142,15 @@ if (IS_RUN){
     // var pml_input = PML_INPUTS_d8(date_begin, date_end, dailyImg_iters);
     // print(gldas_input); //gldas_input, pml_input
 
-    var pkg_export = require('users/kongdd/public:pkg_export.js');
-    pkg_export.ExportImgCol(gldas_input, dates, [-180, -60, 180, 90], 0.25, 
-        'asset', 'projects/pml_evapotranspiration/PML_INPUTS/GLDAS_V21_8day_V2');
+    var pkg_export = require('users/kongdd/public:pkg_export2.js');
+    var options = {
+        type     : "asset",
+        range    : [-180, -60, 180, 90], 
+        cellsize : 0.25, 
+        crs      : 'EPSG:4326',
+        folder   : 'projects/pml_evapotranspiration/PML_INPUTS/GLDAS_V21_8day_V2'
+    }
+    pkg_export.ExportImgCol(gldas_input, dates, options);
         
     // var inputs = ee.List.sequence(2002, 2016).iterate(function(year, first){
     // var imgcol = PML_INPUTS_d8(year);
