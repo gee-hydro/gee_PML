@@ -374,7 +374,6 @@ function vapor_pressure(t) {
  *     -- PML_daily(img)
  *     `PML_daily` has all the access of yearly land cover based parameters 
  *     (e.g. gsx, hc, LAIref, S_sls). 
- *     
  * 
  *     -- PML_year(INPUTS)
  *     
@@ -389,7 +388,7 @@ function vapor_pressure(t) {
 function PML(year, is_PMLV2) {
     // fix landcover time range after 2013, 2014-2016
     year         = ee.Number(year);
-    var year_max = 2016, 
+    var year_max = 2018, 
         year_min = 2001;
     var year_land = ee.Algorithms.If(year.gt(year_max), year_max, 
             ee.Algorithms.If(year.lt(year_min), year_min, year));
@@ -695,13 +694,13 @@ function PML(year, is_PMLV2) {
 
 var exec = true;
 var options = {
-    range        : [-180, -60, 180, 90],
+    range        : [-180, -60, 180, 89],
     cellsize     : 1 / 240, //1/240,
     type         : 'asset',
     crs          : 'SR-ORG:6974', //projects/pml_evapotranspiration
     crsTransform : prj.crsTransform
-}
-    
+};
+
 function img_GlobalSum(img, bands, scale){
     bands = bands || img.bandNames();
     scale = scale || 50000;
@@ -821,9 +820,11 @@ if (exec) {
         // print(imgcol_year, img_trend);
         
         task = 'img_trend';
-        options.folder = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014_staticLC2003';
-        pkg_export.ExportImg(img_trend, task, options);
+        folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014_staticLC2003';
+        type = 'asset';
+        pkg_export.ExportImg(img_trend, task, range, cellsize, type, folder_yearly, crs, crsTransform);
         // Map.addLayer(mask, {min:0, max:1, palette: ['white', 'red']}, 'mask');
+        
     } else {
         // export parameter for yearly PML
         var folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014_staticLC2003'; //_bilinear
@@ -836,12 +837,13 @@ if (exec) {
             ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
             
             imgcol_PML = PML(year, is_PMLV2);
-            print(imgcol_PML);
+            // print(imgcol_PML);
             
             img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
                 .set('system:time_start', begin_date.millis())
                 .set('system:id', task);
             
+            options.folder = folder_yearly;
             pkg_export.ExportImg(img_year, task, options);
             // pkg_export.ExportImgCol(PML_Imgs, dates, range, scale, type, folder, crs);
         }

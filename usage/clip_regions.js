@@ -2,6 +2,7 @@
 var region = ee.FeatureCollection("users/kongdd/shp/au_poly"),
     PML_V1 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
+
 /**
  * Clip and download ImageCollection data in GEE
  * 
@@ -16,7 +17,7 @@ var region = ee.FeatureCollection("users/kongdd/shp/au_poly"),
  *    
  *    If you use EXPORT by ee.ImageCollection, please remove `.limit(3)` in L67
  */
-var pkg_export = require('users/kongdd/public:pkg_export.js');
+var pkg_export = require('users/kongdd/public:pkg_export2.js');
 
 /** get bbox of assigned region */
 function getRange(region){
@@ -46,12 +47,15 @@ print(range); // check the defined range
 // Map.addLayer(bound, {}, 'bounds');
 
 
-var cellsize = 1 / 20,    // The resolution you want to resample, in the unit of degree.
+var options = {
+    range    : range, 
+    cellsize : 1 / 20,      // The resolution you want to resample, in the unit of degree.
                           // The original resolution is 500m (1/240 deg).
-    type   = 'drive',     // Three options: 'drive', 'asset', 'cloud'
-    folder = 'PML',       // Download data to this directory.
-    crs    = 'EPSG:4326'; // Projection you want to transform. The default is wgs84.
+    type   : 'drive',     // Three options: 'drive', 'asset', 'cloud'
+    folder : 'PML',       // Download data to this directory.
+    crs    : 'EPSG:4326'  // Projection you want to transform. The default is wgs84.
                           // The original is MODIS Sinusoidal projection.
+}
 
 var date_begin = '2002-07-04', // begin time
     date_end   = '2017-12-31'; // end time
@@ -68,20 +72,19 @@ imgcol = imgcol.filterDate(date_begin, date_end);
 // print(imgcol.limit(10));
 // Map.addLayer(region);
 
-pkg_export.ExportImgCol(imgcol.limit(3), undefined, range, cellsize, type, folder, crs);
+pkg_export.ExportImgCol(imgcol.limit(3), undefined, options);
 
 ////////////////////////////////////////////////////////////////////////
 /////////////// 2. EXPORT by multiple bands ee.Image ///////////////////
 ////////////////////////////////////////////////////////////////////////
-
 var img = imgcol.toBands();
 // print(imgcol.limit(3));
 print(img);
 var task = 'PML_multiple_bands';
-pkg_export.ExportImg(img, task, range, cellsize, type, folder, crs);
+pkg_export.ExportImg(img, task, options);
 
 // export bandnames
 var bandnames = img.bandNames();
 var f = ee.FeatureCollection(ee.Feature(null, {bandname: bandnames}));
 var task_bandname = task.concat('_names');
-Export.table.toDrive(f, task_bandname, folder, task_bandname, "CSV");
+Export.table.toDrive(f, task_bandname, options.folder, task_bandname, "CSV");

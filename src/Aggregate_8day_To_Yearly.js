@@ -4,27 +4,27 @@ var imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1");
 /**
  * Dongdong Kong, 20191227
  * 
- * Aggregate into yearly
+ * Aggregate PMLV2 8-day into yearly
  */
 var pkg_export = require('users/kongdd/public:pkg_export2.js');
 var imgcol_PMLV2_v015_8d = ee.ImageCollection('projects/pml_evapotranspiration/PML/V2/8day');
+imgcol_PMLV2_v015_8d = ee.ImageCollection(imgcol_PMLV2_v015_8d.toList(2000));
 
-
-var imgcol_years = aggregateToYearly(imgcol_PMLV2_v015_8d, 2003, 2018, 0.01, true);
+var imgcol_years = aggregateToYearly(imgcol_PMLV2_v015_8d, 2010, 2018, 0.01, true);
 
 var exec = true;
 
 var prj = pkg_export.getProj(imgcol_land);
 var options = {
-    range        : [-180, -60, 180, 90],
-    cellsize     : 1 / 240, //1/240,
     type         : 'asset',
-    crs          : 'SR-ORG:6974', //projects/pml_evapotranspiration
+    range        : [-180, -60, 180, 89],
+    cellsize     : 1 / 240, //1/240,
     folder       : 'projects/pml_evapotranspiration/PML/V2/yearly',
+    crs          : 'SR-ORG:6974', //projects/pml_evapotranspiration
     crsTransform : prj.crsTransform
 };
 // Map.addLayer(imgcol_years, {}, 'yearly');
-pkg_export.ExportImgCol(imgcol_years, null, options);
+pkg_export.ExportImgCol(imgcol_years, null, options, "PMLV2_v015_");
 
 
 /** MAIN FUNCTIONS ---------------------------------------------------------- */

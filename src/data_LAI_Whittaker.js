@@ -80,31 +80,31 @@ var date2str = function(x) { return ee.Date(x).format('YYYY_MM_dd'); };
     var img_out = mat_zs.arraySlice(1, -1).arrayProject([0]).arrayFlatten([ids]);//only select the last iter
     img_out = img_out.multiply(10).uint8();
     
-    Map.addLayer(img_out, {}, 'img_out')
+    Map.addLayer(img_out, {}, 'img_out');
 
     /** 4. EXPORT ----------------------------------------------------------- */
     var pkg_export = require('users/kongdd/public:pkg_export2.js');
-    var range      = [-180, -60, 180, 90], //
-        range_high = [-180,  60, 180, 90]; //
+    var range      = [-180, -60, 180, 89]; //
+    var range_high = [-180,  60, 180, 90]; //
 
     var prj = pkg_export.getProj(imgcol_lai);
     var options = {
-        range        : [-180, -60, 180, 90],
+        range        : range,
         cellsize     : 1 / 240, 
         type         : 'asset',
         folder       : 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit_4d',
         crs          : 'SR-ORG:6974',
         crsTransform : prj.crsTransform, 
-    }
+    };
         
-    var task       = 'whit_'.concat(year_begin).concat('_').concat(year_end);    
+    var task     = 'whit_'.concat(year_begin); //.concat('_').concat(year_end);    
     var options2 = {
         folder: "projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit2018", 
         tile_nx: 5, 
         tile_ny: 2
     };
     print(options, 'options');
-    var range     = [-180, -60, 180, 90];
+    // var range     = [-180, -60, 180, 90];
     // range = [70, 15, 140, 25];
     print(prj, img_out);
     // Map.addLayer(img_out, {}, 'img_out');
