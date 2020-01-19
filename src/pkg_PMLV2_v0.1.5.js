@@ -379,10 +379,30 @@ function PML_INPUTS_d8(begin_year, end_year) {
         });
     }
     
+    if (!options.is_dynamic_lc) {
+        // Update Year
+        modis_input = modis_input.map(function(img){
+            var date = img.get('system:time_start');
+            date = updateYear(date, begin_year);
+            img = img.set('system:time_start', date.millis());
+            return img;
+        });    
+    }
+
     var pml_input = pkg_join.InnerJoin(modis_input, gldas_input).sort("system:time_start");
     // Map.addLayer(pml_input, {}, 'pml_input');
     // Map.addLayer(modis_input, {}, 'modis_input');
     return ee.ImageCollection(pml_input);
+}
+
+function updateYear(date, year){
+    date = ee.Date(date);
+    year = ee.Number(year);
+    var doy  = date.difference(ee.Date.fromYMD(date.get('year').subtract(1), 12, 31), 'day');
+    
+    var date2 = year.format('%d').cat(doy.format('%03d'));
+    date2 = ee.Date.parse('yyyyDDD', date2);
+    return date2;
 }
 
 /** PML GLOBAL PARAMETERS */
@@ -513,13 +533,17 @@ function vapor_pressure(t) {
  */
 function PML(year, is_PMLV2) {
     // fix landcover time range after 2013, 2014-2016
-    year = ee.Number(year);
+    // year = ee.Number(year);
     // print(year, is_PMLV2);
     
     var year_max = 2018,
         year_min = 2001;
-    var year_land = ee.Algorithms.If(year.gt(year_max), year_max,
-        ee.Algorithms.If(year.lt(year_min), year_min, year));
+    var year_land = year;
+    if (year > year_max) year_land = year_max;
+    if (year < year_min) year_land = year_min;
+
+    // var year_land = ee.Algorithms.If(year.gt(year_max), year_max,
+    //     ee.Algorithms.If(year.lt(year_min), year_min, year));
 
     if (options.is_dynamic_lc) year_land = 2003; // dynamic landcover
     var filter_date_land = ee.Filter.calendarRange(year_land, year_land, 'year');
@@ -785,9 +809,9 @@ function PML(year, is_PMLV2) {
 
     var INPUTS = PML_INPUTS_d8(year);
     var PML_Imgs = PML_period(INPUTS);
-    print(INPUTS)
+    // print(INPUTS)
     // Map.addLayer(INPUTS, {}, 'INPUT');
-    // Map.addLayer(PML_Imgs, {}, 'PML_Imgs');
+    // Map.addLayer(PML_Imgs, {}, 'PML_Imgs_'.concat(year.toString()));
     return PML_Imgs;
 }
 
@@ -820,7 +844,7 @@ pkg_PML.PMLV2_Yearly = function() {
     var years = pkg_main.seq(options.year_begin, options.year_end);
     
     function func_yearly (year) {
-        year = ee.Number(year);
+        // year = ee.Number(year);
         var imgcol_PML = PML(year, options.is_PMLV2);
     
         var begin_date = ee.Date.fromYMD(year, 1, 1);
@@ -837,7 +861,7 @@ pkg_PML.PMLV2_Yearly = function() {
     // enable debug function
     var imgcol_year = years.map(func_yearly);
     
-    print(imgcol_year);
+    // print(imgcol_year);
     imgcol_year = ee.ImageCollection(imgcol_year);
     if (options.is_save) pkg_export.ExportImgCol(imgcol_year, null, options.Export, options.prefix);
     return(imgcol_year);
@@ -918,7 +942,7 @@ if (__main__) {
     // default is dynamic
     var opt = {
         year_begin: 2003,
-        year_end  : 2004,
+        year_end  : 2009,
         folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_dynamic", // _staticLC2003
         // folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_static", // _staticLC2003
         timescale : "yearly", 
