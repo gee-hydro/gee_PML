@@ -436,7 +436,7 @@ function vapor_pressure(t) {
 function PML(year, is_PMLV2) {
     // fix landcover time range after 2013, 2014-2016
     year = ee.Number(year);
-    var year_max = 2016,
+    var year_max = 2018,
         year_min = 2001;
     var year_land = ee.Algorithms.If(year.gt(year_max), year_max,
         ee.Algorithms.If(year.lt(year_min), year_min, year));

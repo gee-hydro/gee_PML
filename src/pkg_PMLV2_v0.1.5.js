@@ -7,11 +7,13 @@ var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165
     imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
     co2 = ee.FeatureCollection("projects/pml_evapotranspiration/PML_INPUTS/co2_mm_gl_2002-2019_8day");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
+var pkg_PML = {};
+// var pkg_PML = require('users/kongdd/gee_PML:src/pkg_PMLV2_v0.1.5.js');
 /**
  * PML_V2 (Penman-Monteith-Leuning) model 
  *
  * @usage:
- * var pkg_PML = require('users/kongdd/pkgs:Math/PML_v2.js');
+ * var pkg_PML = require('users/kongdd/gee_PML:src/pkg_PMLV2_v0.1.5.js');
  *
  * ## UPDATES: 
  * # 30 April, 2018; kongdd
@@ -19,6 +21,8 @@ var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165
  *     * Add trend inspection module
  * # 03 Aug  , 2018; kongdd
  *     * Update PML_V2 images to 2019
+ * # 19 Jan  , 2019; kongdd
+ *     * make PMLV2 into a package (version 0.1.5)
  * 
  * @reference
  * 1. Zhang, Y., Kong, D., Gan, R., Chiew, F.H.S., McVicar, T.R., Zhang, Q., and 
@@ -56,41 +60,12 @@ var pkg_export = require('users/kongdd/public:pkg_export2.js');
 var pkg_vis = require('users/kongdd/public:pkg_vis.js');
 // var points     = require('users/kongdd/public:data/flux_points.js').points;
 
-var prj = pkg_export.getProj(imgcol_land);
-
 var I_interp = true; // whether Interpolate MODIS LAI, Emissivity and Albedo
 
 // `meth_interp` is used to resample  into high-resolution
 // not suggest 'biculic'. bicubic can't constrain values in reasonable boundary.
 var meth_interp = 'bilinear'; // or 'bicubic'; for meteometeorological forcing spatial interpolatation
 var filter_date_all = ee.Filter.date('2002-07-01', '2019-12-31');
-
-/**
-MODIS 005 IGBP land cover code
-% 0 Water Bodies
-% 1 Evergreen Needleleaf Forest
-% 2 Evergreen Broadleaf Forest
-% 3 Deciduous Needleleaf Forest
-% 4 Deciduous Broadleaf Forest
-% 5 Mixed Forest
-% 6 Closed Shrublands
-% 7 Open Shrublands
-% 8 Woody Savannas
-% 9 Savannas
-% 10 Grasslands
-% 11 Permanent Wetlands
-% 12 Croplands
-% 13 Urban and Built-Up
-% 14 Cropland/Natural Vegetation Mosaic
-% 15 Permanent Snow and Ice
-% 16 Barren or Sparsely Vegetated
-% 17 Unclassified
-
-/**
-006 landcover 
-0  | UNC
-17 | WATER
- */
 
 /** fix MCD12Q1_006 land cover code. */
 var ImgCol_land = imgcol_land.select(0).map(function (land) {
@@ -174,7 +149,7 @@ if (I_interp) {
 // print_1th(imgcol_emiss);
 // print_1th(imgcol_albedo);
 
-// annual variation
+// 0. check input variables (annual variation) ---------------------------------
 var options_vis = {
     year_start: 2011,
     year_end: 2018,
@@ -199,7 +174,6 @@ if (Figure1) {
     var delta, vis;
     var colors = ["ff0d01", "fafff5", "2aff03"];
     
-    
     delta = 0.5 ; vis = { min: -delta, max: delta, palette: colors }; // 1. lai
     delta = 0.01; vis = { min: -delta, max: delta, palette: colors }; // 2. albedo
     delta = 0.05; vis = { min: -delta, max: delta, palette: colors }; // 3. emiss
@@ -210,7 +184,6 @@ if (Figure1) {
     // pkg_vis.show_annual_imgcol(maps, imgcol_albedo_anorm, options_vis);
     pkg_vis.show_annual_imgcol(maps, imgcol_emiss_anorm, options_vis);
 }
-
 
 function aggregate_yearly(imgcol, band, scale_factor) {
     band = band || 0;
@@ -239,6 +212,89 @@ function yearly_anomaly(imgcol, band, scale_factor, is_yearly) {
     // print(imgcol_annual.limit(3), imgcol_diff.limit(3));
     return imgcol_diff;
 }
+
+
+/** 1. fill_options --------------------------------------------------------- */
+// default_true(null)
+// default_true(undefined)
+function default_true(x) {
+    return (x === undefined || x === null) ? true : x;
+}
+
+var prj = pkg_export.getProj(imgcol_land);
+var options = {
+    PML: {},
+    Export: {
+        range: [-180, -60, 180, -89],
+        cellsize: 1 / 240, //1/240,
+        type: 'asset',
+        crs: 'SR-ORG:6974', //projects/pml_evapotranspiration
+        crsTransform: prj.crsTransform    
+    }
+};
+// print(options);
+/**
+ * [fill_options description]
+ *
+ * @param {Dictionary} opt
+ * - `timescale`: `8d` or `yearly`
+ * - `year_begin`:
+ * - `year_end`:
+ * - `is_PMLV2`:
+ * - `is_save`:
+ * - `is_dynamic_lc`:
+ * - `timescale`:
+ * - `folder`:
+ * @return {[type]} [description]
+ *
+ * @example
+ var opt = {
+    timescale = 'yearly',
+    folder = 'projects/pml_evapotranspiration/PML/V2/yearly'
+ }
+ */
+pkg_PML.fill_options = function(opt, verbose){
+
+    var year_begin    = opt.year_begin || 2003;
+    var year_end      = opt.year_end   || 2017;
+    var is_PMLV2      = default_true(opt.is_PMLV2);
+    var is_save       = default_true(opt.is_save);
+    var is_dynamic_lc = default_true(opt.is_dynamic_lc);
+    var timescale     = opt.timescale || "yearly";
+
+    var bands, folder2, prefix;
+
+    if (is_PMLV2) {
+        bands = ['GPP', 'Ec', 'Es', 'Ei', 'ET_water', 'qc']; //,'qc'
+        if (timescale !== "yearly") 
+            folder2 = 'projects/pml_evapotranspiration/PML/V2/8day';
+        else 
+            folder2 = 'projects/pml_evapotranspiration/PML/V2/yearly';
+    } else {
+        bands = ['Ec', 'Es', 'Ei', 'ET_water', 'qc'];
+        if (timescale !== "yearly") 
+            folder2 = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day';
+    }
+    folder2 = opt.folder || folder2; // if folder not null, than replace
+    options.Export.folder = folder2;
+
+    var prefix = is_PMLV2 ? "PMLV2_" : "PMLV1_";
+    prefix = prefix.concat(timescale).concat("_")
+    options.prefix = prefix;
+
+    options.PML = {
+        year_begin   : year_begin, 
+        year_end     : year_end, 
+        is_PMLV2     : is_PMLV2, 
+        is_dynamic_lc: is_dynamic_lc
+        is_save      : is_save, 
+        timescale    : timescale, 
+        bands        : bands
+    }
+    if (verbose) print(options)
+}
+
+/** 2. ------------------------------------------------------------------- */
 
 /**
  * Prepare INPUT datset for PML_V2
@@ -465,7 +521,6 @@ function PML(year, is_PMLV2) {
         kA = propertyByLand_v2(land, kA_raw);
         var VPDmin = propertyByLand_v2(land, VPDmin_raw);
         var VPDmax = propertyByLand_v2(land, VPDmax_raw);
-
         // VPDmin = 0.93; VPDmax = 4.3;
         // for PML_v1 D0, kQ, kA are constant parameters.
     }
@@ -696,6 +751,8 @@ function PML(year, is_PMLV2) {
             return img.addBands(Es); //ET
         }).select(bands); //, 'ET_water'
 
+print("debug");
+
         // Map.addLayer(INPUTS, {}, 'INPUTS');
         // Map.addLayer(PML_ImgsRaw.select('Ec'), {}, 'Ec');
         // Map.addLayer(PML_Imgs, {}, 'PML_Imgs');
@@ -703,208 +760,162 @@ function PML(year, is_PMLV2) {
         return PML_Imgs;
     }
 
-    function Export() {
-        /** Export ImgCol into asset */
-        var save = true;
-        if (save) {
-            var dates = ee.List(INPUTS.aggregate_array('system:time_start'))
-                .map(function (date) { return ee.Date(date).format('yyyy-MM-dd'); }); //.getInfo(); //DATES of INPUT
-
-            // print('hello', PML_Imgs, dates);
-            var img = ee.Image(PML_Imgs.first());
-            // img = img.select(ee.List.sequence(0, 4)); //rm qc band
-            // var crs_trans = img.select('qc').projection().transform();
-            // img = img.reproject(crs, crs_trans);
-
-            // print(img, crs_trans);
-            // Map.addLayer(img);
-            // Map.addLayer(PML_Imgs, {}, 'PML_Imgs')
-            // print(PML_Imgs, dates);
-
-            // export_image(img, '2002-07-05_v6');
-            pkg_export.ExportImgCol(PML_Imgs, dates, range, scale, type, folder, crs);
-            // pkg_export.ExportImg(img, range, '2002-07-05_v4', scale, drive, folder, crs)
-        } else {
-            print('PML_Imgs', PML_Imgs);
-        }
-    }
-
     var INPUTS = PML_INPUTS_d8(year);
     // Map.addLayer(INPUTS, {}, 'INPUT');
 
     var PML_Imgs = PML_period(INPUTS);
-    // Export();
     return PML_Imgs;
 }
 
-var exec = true;
-var options = {
-    range: [-180, -60, 180, 90],
-    cellsize: 1 / 240, //1/240,
-    type: 'asset',
-    crs: 'SR-ORG:6974', //projects/pml_evapotranspiration
-    crsTransform: prj.crsTransform
-}
+var vis_et  = { min: 100, max: 1600, palette: pkg_vis.colors.RdYlBu[11] },
+    vis_gpp = { min: 100, max: 3500, palette: pkg_vis.colors.RdYlGn[11] };
+var vis_slp = { min: -20, max: 20, palette: ["ff0d01", "fafff5", "2aff03"] }; // green to red
 
-function img_GlobalSum(img, bands, scale) {
-    bands = bands || img.bandNames();
-    scale = scale || 50000;
-    /** define reducer */
-    // define reduction function (client-side), see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Reduce
-    var combine = function (reducer, prev) { return reducer.combine(prev, null, true); };
-    var reducers = [ee.Reducer.mean(), ee.Reducer.count(), ee.Reducer.stdDev()];
-    // var reducer = ee.Reducer.sum();
-    // print(reducers.slice(1), 'reducers.slice(1)');
-    var reducer = reducers.slice(1).reduce(combine, reducers[0]);
+var lg_gpp = pkg_vis.grad_legend(vis_gpp, 'GPP', false);
+var lg_slp = pkg_vis.grad_legend(vis_slp, 'Trend (gC m-2 y-2)', false); //gC m-2 y-2, kPa y-1
+// pkg_vis.add_lgds([lg_gpp, lg_slp]);
 
-    var dict = img.select(bands).reduceRegion({
-        reducer: reducer,
-        geometry: bounds,
-        scale: scale, maxPixels: 1e13, tileScale: 16
-    });
-
-    var fc = ee.FeatureCollection(ee.Feature(null, dict));
-    Export.table.toDrive({
-        collection: fc,
-        description: 'temp',
-        folder: "IGBP",
-        fileFormat: 'GeoJSON'
-    });
-    return fc;
-}
-
-function imgcol_globalSum() {
-    Export.table.toDrive({
-        collection: x,
-        description: task,
-        folder: "IGBP",
-        fileFormat: 'GeoJSON'
-    });
-}
-
-if (exec) {
-    var is_PMLV2 = true; //If false, PML_V1 will be used!
-    var bands, folder;
-    if (is_PMLV2) {
-        bands = ['GPP', 'Ec', 'Es', 'Ei', 'ET_water', 'qc']; //,'qc'
-        folder = 'projects/pml_evapotranspiration/PML/V2/8day';//'projects/pml_evapotranspiration/PML_v2';
-    } else {
-        bands = ['Ec', 'Es', 'Ei', 'ET_water', 'qc'];
-        folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day';
-    }
-    // cellsize = 1/4;
-    // folder   = "projects/pml_evapotranspiration/PML/bugs";
-
-    var year = 2003,
-        year_begin = 2003,
-        year_end = year_begin + 0, //year_begin + 3,
-        save = true, //global param called in PML_main
-        debug = false;
-
-    var imgcol_PML, img_year;
+pkg_PML.PMLV2_8day = function(){
     var begin_date, ydays;
+    for (var year = options.year_begin; year <= options.year_end; year++) {
+        begin_date = ee.Date.fromYMD(year, 1, 1);
+        // task = begin_date.format('YYYY-MM-dd').getInfo();
+        ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
 
-    var years = ee.List.sequence(2003, 2018);
-    var vis_et = { min: 100, max: 1600, palette: pkg_vis.colors.RdYlBu[11] },
-        vis_gpp = { min: 100, max: 3500, palette: pkg_vis.colors.RdYlGn[11] };
-    var vis_slp = { min: -20, max: 20, palette: ["ff0d01", "fafff5", "2aff03"] };
+        imgcol_PML = PML(year, options.is_PMLV2);
+        // rm qc
+        img_year = imgcol_PML.select(options.bands.slice(0, -1)).mean().multiply(ydays)
+            .set('system:time_start', begin_date.millis())
+            .set('system:id', task);
 
-    var lg_gpp = pkg_vis.grad_legend(vis_gpp, 'GPP', false);
-    var lg_slp = pkg_vis.grad_legend(vis_slp, 'Trend (gC m-2 y-2)', false); //gC m-2 y-2, kPa y-1
+        if (options.is_save) pkg_export.ExportImgCol(imgcol_PML, null, options.Export, options.prefix);
+    }
+}
 
-    pkg_vis.add_lgds([lg_gpp, lg_slp]);
+pkg_PML.PMLV2_Yearly = function() {
+    var years = ee.List.sequence(options.year_begin, options.year_end);
+    var imgcol_year = years.map(function (year) {
+        year = ee.Number(year);
+        var imgcol_PML = PML(year, options.is_PMLV2);
 
-    if (debug) {
-        /** 1. Check the output of PML_V2 **/
-        // var imgcol_input = PML_INPUTS_d8(2018, 2018);
-        // Map.addLayer(imgcol_input, {}, 'imgcol_input');
-        var imgcol_PML = PML(2018, is_PMLV2);
-        // print(prj, 'prj');
-        // print(imgcol_PML, 'imgcol_PML');
-        pkg_export.ExportImgCol(imgcol_PML.limit(2), null, options);
-        // pkg_export.ExportImgCol(imgcol_PML.limit(2), null, range, cellsize, type, folder, crs, crsTransform);
+        var begin_date = ee.Date.fromYMD(year, 1, 1);
+        var task = begin_date.format('YYYY-MM-dd'); //.getInfo();
+        var ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
 
-        var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
-        // year = ee.Number(year);
-        // begin_date = ee.Date.fromYMD(year,1,1);
-        // ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
+        var img_year = imgcol_PML.select(options.bands.slice(0, -1)).mean().multiply(ydays).divide(100)
+            .toFloat()
+            .set('system:time_start', begin_date.millis())
+            .set('system:id', task);
+        return img_year;
+    });
 
-        // // print(begin_date, ydays, year)
+    imgcol_year = ee.ImageCollection(imgcol_year);
+    if (options.is_save) pkg_export.ExportImgCol(imgcol_year, null, options.Export, options.prefix);
+    return(imgcol_year);
+}
 
-        // imgcol_PML = PML(year, is_PMLV2);
-        // img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
-        //     .set('system:time_start', begin_date.millis())
-        //     .set('system:id', begin_date.format('YYYY-MM-dd'));
+/**
+ * [PML_main description]
+ *
+ * @param {[type]} opt [description]
+ * @example
 
-        // print(imgcol_PML)
-        // print('imgcol_PML', ydays, imgcol_PML, img_year);
-        // check outliers
-        // var img = imgcol_PML.first(); //img_year; //
-        // var mask = img.select('Ec').expression('b() > 1e5 || b() < 0');
-        // Map.addLayer(img_year.select('GPP'), vis_gpp, 'img_year');
+var opt = {
+    year_begin: 2003, 
+    year_end  : 2017,
+    folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015", // _staticLC2003
+    timescale : "yearly", 
+}
+pkg_PML.PML_main(opt);
+ */
+pkg_PML.PML_main = function(opt) {
+    pkg_PML.fill_options(opt)
+    
+    var imgcol_PML, img_year;
 
-        var imgcol_year = years.map(function (year) {
-            year = ee.Number(year);
-            var imgcol_PML = PML(year, is_PMLV2);
+    var debug = false;    
+    if (debug) options.is_save = false;
 
-            var begin_date = ee.Date.fromYMD(year, 1, 1);
-            var task = begin_date.format('YYYY-MM-dd'); //.getInfo();
-            var ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
+    var imgcol;
+    if (options.timescale === "8d") {
+        imgcol = pkg_PML.PMLV2_8day();
+    } else if (options.timescale === "yearly") {
+        imgcol = pkg_PML.PMLV2_Yearly();
 
-            var img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays).divide(100)
-                .toFloat()
-                .set('system:time_start', begin_date.millis())
-                .set('system:id', task);
-            // print(img_year)
-            return img_year;
-        });
-
-        imgcol_year = ee.ImageCollection(imgcol_year);
-        Map.addLayer(imgcol_year, {}, "imgcol_year");
-        print(imgcol_year);
-
-        var img_trend_gpp = pkg_trend.imgcol_trend(imgcol_year, 'GPP', true);
-        var img_trend_et = pkg_trend.imgcol_trend(imgcol_year, 'Ec', true);
-
-        Map.addLayer(img_trend_gpp.select('slope'), vis_slp, 'gpp');
-        Map.addLayer(img_trend_et.select('slope'), vis_slp, 'Ec');
-
-        var img = imgcol_year.first(); //img_year; //
-        Map.addLayer(img.select('GPP'), vis_gpp, 'first_year GPP');
-
-        // var globalSum = img_GlobalSum(img);
-        // print(img, globalSum, 'globalSum');
-
-        // var mask = img.expression('b("Ec")+b("Es")+b("Ei")').expression('b() > 1e5 || b() < 0');
-        // // print(imgcol_year, img_trend);
-
-        // task = 'img_trend';
-        // folder_yearly = 'projects/pml_evapotranspiration/PML/V2/yearly';
-        // type = 'asset';
-        // pkg_export.ExportImg(img_trend, task, range, cellsize, type, folder_yearly, crs, crsTransform);
-        // Map.addLayer(mask, {min:0, max:1, palette: ['white', 'red']}, 'mask');
-    } else {
-        // export parameter for yearly PML
-        var folder_yearly = 'projects/pml_evapotranspiration/PML/V2/yearly'; //_bilinear
-        var task;
-
-        for (var year = year_begin; year <= year_end; year++) {
-            begin_date = ee.Date.fromYMD(year, 1, 1);
-            task = begin_date.format('YYYY-MM-dd').getInfo();
-
-            ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
-
-            imgcol_PML = PML(year, is_PMLV2);
-            img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
-                .set('system:time_start', begin_date.millis())
-                .set('system:id', task);
-
-            // pkg_export.ExportImg(img_year, task, range, cellsize, type, folder_yearly, crs, crsTransform);
-            // pkg_export.ExportImgCol(imgcol_PML, null, range, cellsize, type, folder, crs, crsTransform);
+        if (debug) {
+            /** 1. Check the output of PML_V2 **/
+            var imgcol_PML = PML(2018, options.is_PMLV2);
+            // print(imgcol_PML, 'imgcol_PML');
+            trend_yearly(imgcol);                           // yearly trend
+            
+            pkg_export.ExportImgCol(imgcol_PML.limit(2), null, options.Export);
         }
     }
+    return imgcol;
 }
 
-exports = {
-    PML: PML
-};
+/** 
+ * display maps of
+ * - trend_GPP
+ * - trend_Ec
+ * - GPP_2003
+ */
+function trend_yearly(imgcol_year, show_imgcol){
+    var show_imgcol = show_imgcol || false;
+
+    // 2. trend
+    var img_trend_gpp = pkg_trend.imgcol_trend(imgcol_year, 'GPP', true);
+    var img_trend_et = pkg_trend.imgcol_trend(imgcol_year, 'Ec', true);
+
+    Map.addLayer(img_trend_gpp.select('slope'), vis_slp, 'gpp');
+    Map.addLayer(img_trend_et.select('slope'), vis_slp, 'Ec');
+
+    var img = imgcol_year.first(); //img_year; //
+    Map.addLayer(img.select('GPP'), vis_gpp, 'first_year GPP');
+    if (show_imgcol) Map.addLayer(imgcol_year, {}, "imgcol_year");
+    print(imgcol_year);
+}
+
+pkg_PML.add_ETsum = function(img){
+    var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename("ET");
+    return img.addBands(ET);
+}
+
+exports = pkg_PML;
+
+
+// function img_GlobalSum(img, bands, scale) {
+//     bands = bands || img.bandNames();
+//     scale = scale || 50000;
+//     /** define reducer */
+//     // define reduction function (client-side), see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Reduce
+//     var combine = function (reducer, prev) { return reducer.combine(prev, null, true); };
+//     var reducers = [ee.Reducer.mean(), ee.Reducer.count(), ee.Reducer.stdDev()];
+//     // var reducer = ee.Reducer.sum();
+//     // print(reducers.slice(1), 'reducers.slice(1)');
+//     var reducer = reducers.slice(1).reduce(combine, reducers[0]);
+
+//     var dict = img.select(bands).reduceRegion({
+//         reducer: reducer,
+//         geometry: bounds,
+//         scale: scale, maxPixels: 1e13, tileScale: 16
+//     });
+
+//     var fc = ee.FeatureCollection(ee.Feature(null, dict));
+//     Export.table.toDrive({
+//         collection: fc,
+//         description: 'temp',
+//         folder: "IGBP",
+//         fileFormat: 'GeoJSON'
+//     });
+//     return fc;
+// }
+
+// function imgcol_globalSum() {
+//     Export.table.toDrive({
+//         collection: x,
+//         description: task,
+//         folder: "IGBP",
+//         fileFormat: 'GeoJSON'
+//     });
+// }
