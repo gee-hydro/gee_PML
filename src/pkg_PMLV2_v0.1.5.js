@@ -145,7 +145,7 @@ if (I_interp) {
         .select([0], ['Albedo']);
     // print('No Interped');
 }
-// print_1th(imgcol_lai);
+// print(imgcol_lai.filterDate('2003-01-01', '2003-12-31'));
 // print_1th(imgcol_emiss);
 // print_1th(imgcol_albedo);
 
@@ -225,7 +225,7 @@ var prj = pkg_export.getProj(imgcol_land);
 var options = {
     PML: {},
     Export: {
-        range: [-180, -60, 180, -89],
+        range: [-180, -60, 180, 89],
         cellsize: 1 / 240, //1/240,
         type: 'asset',
         crs: 'SR-ORG:6974', //projects/pml_evapotranspiration
@@ -262,7 +262,7 @@ pkg_PML.fill_options = function(opt, verbose){
     var is_dynamic_lc = default_true(opt.is_dynamic_lc);
     var timescale     = opt.timescale || "yearly";
 
-    var bands, folder2, prefix;
+    var bands, folder2;
 
     if (is_PMLV2) {
         bands = ['GPP', 'Ec', 'Es', 'Ei', 'ET_water', 'qc']; //,'qc'
@@ -279,20 +279,20 @@ pkg_PML.fill_options = function(opt, verbose){
     options.Export.folder = folder2;
 
     var prefix = is_PMLV2 ? "PMLV2_" : "PMLV1_";
-    prefix = prefix.concat(timescale).concat("_")
+    prefix = prefix.concat(timescale).concat("_");
     options.prefix = prefix;
-
-    options.PML = {
-        year_begin   : year_begin, 
-        year_end     : year_end, 
-        is_PMLV2     : is_PMLV2, 
-        is_dynamic_lc: is_dynamic_lc
-        is_save      : is_save, 
-        timescale    : timescale, 
-        bands        : bands
-    }
-    if (verbose) print(options)
-}
+  
+    options.is_save       = is_save;
+    options.year_begin    = year_begin; 
+    options.year_end      = year_end; 
+    options.is_PMLV2      = is_PMLV2; 
+    options.is_dynamic_lc = is_dynamic_lc;    
+    options.is_save       = is_save; 
+    options.timescale     = timescale; 
+    options.bands         = bands;   
+    
+    if (verbose) print(options);
+};
 
 /** 2. ------------------------------------------------------------------- */
 
@@ -327,14 +327,17 @@ function PML_INPUTS_d8(begin_year, end_year) {
     // print(imgcol_lai);
 
     var LAI_d8 = pkg_trend.aggregate_prop(LAI_d4, 'dn', 'mean').select([0], ['LAI']);
-    // print(LAI_d4, LAI_d8, 'LAI_d8');
-
     LAI_d8 = LAI_d8.map(function (img) {
-        return img.updateMask(img.gte(0)).unmask(0); //.mask(land_mask); // LAI[LAI < 0] <- 0
+        var datestr = img.get('dn');
+        var date = pkg_trend.YearDn_date(datestr);
+        return img.updateMask(img.gte(0)).unmask(0)
+            .set('system:time_start', date.millis()); //.mask(land_mask); // LAI[LAI < 0] <- 0
     });
-
+    
+    // print(LAI_d4, LAI_d8, 'LAI_d8');
+    // Map.addLayer(LAI_d4, {}, 'LAI_d4');
+    // Map.addLayer(LAI_d8, {}, 'LAI_d8');
     // LAI has missing images, need to fix in the future
-
     var Albedo_d8 = imgcol_albedo.filter(filter_date);
     var Emiss_d8 = imgcol_emiss.filter(filter_date);
 
@@ -492,6 +495,8 @@ function vapor_pressure(t) {
 function PML(year, is_PMLV2) {
     // fix landcover time range after 2013, 2014-2016
     year = ee.Number(year);
+    // print(year, is_PMLV2);
+    
     var year_max = 2018,
         year_min = 2001;
     var year_land = ee.Algorithms.If(year.gt(year_max), year_max,
@@ -513,7 +518,7 @@ function PML(year, is_PMLV2) {
     if (is_PMLV2) {
         var Alpha = propertyByLand_v2(land, Alpha_raw),
             Thelta = propertyByLand_v2(land, Thelta_raw),
-            m = propertyByLand_v2(land, m_raw),
+            m  = propertyByLand_v2(land, m_raw),
             Am = propertyByLand_v2(land, Am_25_raw);
         // Ca      = 380; //umol mol-1
         D0 = propertyByLand_v2(land, D0_raw);
@@ -530,14 +535,14 @@ function PML(year, is_PMLV2) {
         fER0 = propertyByLand_v2(land, fER0_raw);
 
     /**
-     * Calculate daily PML GPP and ET using GLDAS and MODIS inputs.
-     * 
-     * @param  {Image} img GLDAS meteorological forcing data and MODIS remote sensing data
-     *    with bands: ['LAI', 'Emiss', 'Albedo', 'Pa', 'Tmax', 'Tmin', 'Tavg', 'Prcp', 'Rln', 'Rs', 'U2']
-     * 
-     * @return {Image} PML_ET with bands of ['ET_water', 'Es_eq', 'Ec', 'Ei', 'Pi']; 
-     *                 If v2 = true, GPP also will be returned.
-     */
+    * Calculate daily PML GPP and ET using GLDAS and MODIS inputs.
+    * 
+    * @param  {Image} img GLDAS meteorological forcing data and MODIS remote sensing data
+    *    with bands: ['LAI', 'Emiss', 'Albedo', 'Pa', 'Tmax', 'Tmin', 'Tavg', 'Prcp', 'Rln', 'Rs', 'U2']
+    * 
+    * @return {Image} PML_ET with bands of ['ET_water', 'Es_eq', 'Ec', 'Ei', 'Pi']; 
+    *                 If v2 = true, GPP also will be returned.
+    */
     function PML_daily(img) {
         img = ee.Image(img);
         var Ca = img.select('co2');   //umol mol-1
@@ -559,9 +564,9 @@ function PML(year, is_PMLV2) {
         var lambda = 2500; // latent heat of vaporization, 2500 [J g-1]  at 25 degC
         lambda = Tavg.multiply(-2.2).add(lambda);
         /** 
-         * ACTUAL VAPOUR PRESSURE
-         * https://www.eol.ucar.edu/projects/ceop/dm/documents/refdata_report/eqns.html, Eq-17
-         */
+        * ACTUAL VAPOUR PRESSURE
+        * https://www.eol.ucar.edu/projects/ceop/dm/documents/refdata_report/eqns.html, Eq-17
+        */
         var ea = img.expression('q * p / (0.622 + 0.378 * q)', { 'p': p, 'q': q });
 
         // saturation vapour pressure from Tair
@@ -683,10 +688,10 @@ function PML(year, is_PMLV2) {
         var Ec = LEc.divide(coef_MJ2mm);
 
         /** 
-         * Interception Precipitation Evaporation: prcp_real = prcp - Ei 
-         * @references 
-         * Van Dijk, A.I.J.M. and Warren, G., 2010. The Australian water resources assessment system. Version 0.5, 3(5). P39
-         */
+        * Interception Precipitation Evaporation: prcp_real = prcp - Ei 
+        * @references 
+        * Van Dijk, A.I.J.M. and Warren, G., 2010. The Australian water resources assessment system. Version 0.5, 3(5). P39
+        */
         var prcp = img.select('Prcp');
         var fveg = LAI.expression('1 - exp(-LAI/LAIref)', { LAI: LAI, LAIref: LAIref });
         var Sveg = S_sls.multiply(LAI);
@@ -723,11 +728,11 @@ function PML(year, is_PMLV2) {
     }
 
     /**
-     * Calculate a period PML
-     *
-     * @param {ee.ImageCollection} INPUTS Multibands ImageCollection returned 
-     * by PML_INPUTS_d8
-     */
+    * Calculate a period PML
+    *
+    * @param {ee.ImageCollection} INPUTS Multibands ImageCollection returned 
+    * by PML_INPUTS_d8
+    */
     function PML_period(INPUTS) {
         var len = INPUTS.size();
         /** 2. ImgsRaw: ['Eeq', 'Evp', 'Es_eq', 'Eca', 'Ecr', 'Ei', 'Pi'] */
@@ -749,9 +754,7 @@ function PML(year, is_PMLV2) {
             var Es = img.expression('b("Es_eq") * b("fval_soil")').rename('Es').toUint16();
             // var ET = img.expression('b("Ec") + b("Ei") + Es', { Es: Es }).rename('ET');
             return img.addBands(Es); //ET
-        }).select(bands); //, 'ET_water'
-
-print("debug");
+        }).select(options.bands); //, 'ET_water'
 
         // Map.addLayer(INPUTS, {}, 'INPUTS');
         // Map.addLayer(PML_ImgsRaw.select('Ec'), {}, 'Ec');
@@ -761,9 +764,9 @@ print("debug");
     }
 
     var INPUTS = PML_INPUTS_d8(year);
-    // Map.addLayer(INPUTS, {}, 'INPUT');
-
     var PML_Imgs = PML_period(INPUTS);
+    // Map.addLayer(INPUTS, {}, 'INPUT');
+    Map.addLayer(PML_Imgs, {}, 'PML_Imgs');
     return PML_Imgs;
 }
 
@@ -782,7 +785,7 @@ pkg_PML.PMLV2_8day = function(){
         // task = begin_date.format('YYYY-MM-dd').getInfo();
         ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
 
-        imgcol_PML = PML(year, options.is_PMLV2);
+        imgcol_PML = PML(year, options.PML.is_PMLV2);
         // rm qc
         img_year = imgcol_PML.select(options.bands.slice(0, -1)).mean().multiply(ydays)
             .set('system:time_start', begin_date.millis())
@@ -790,14 +793,15 @@ pkg_PML.PMLV2_8day = function(){
 
         if (options.is_save) pkg_export.ExportImgCol(imgcol_PML, null, options.Export, options.prefix);
     }
-}
+};
 
 pkg_PML.PMLV2_Yearly = function() {
-    var years = ee.List.sequence(options.year_begin, options.year_end);
-    var imgcol_year = years.map(function (year) {
+    var years = pkg_main.seq(options.year_begin, options.year_end);
+    
+    function func_yearly (year) {
         year = ee.Number(year);
         var imgcol_PML = PML(year, options.is_PMLV2);
-
+    
         var begin_date = ee.Date.fromYMD(year, 1, 1);
         var task = begin_date.format('YYYY-MM-dd'); //.getInfo();
         var ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
@@ -807,12 +811,15 @@ pkg_PML.PMLV2_Yearly = function() {
             .set('system:time_start', begin_date.millis())
             .set('system:id', task);
         return img_year;
-    });
-
+    }
+    
+    // enable debug function
+    var imgcol_year = years.map(func_yearly);
+    
     imgcol_year = ee.ImageCollection(imgcol_year);
     if (options.is_save) pkg_export.ExportImgCol(imgcol_year, null, options.Export, options.prefix);
     return(imgcol_year);
-}
+};
 
 /**
  * [PML_main description]
@@ -828,8 +835,8 @@ var opt = {
 }
 pkg_PML.PML_main(opt);
  */
-pkg_PML.PML_main = function(opt) {
-    pkg_PML.fill_options(opt)
+pkg_PML.PML_main = function(opt, verbose) {
+    pkg_PML.fill_options(opt, verbose);
     
     var imgcol_PML, img_year;
 
@@ -841,18 +848,18 @@ pkg_PML.PML_main = function(opt) {
         imgcol = pkg_PML.PMLV2_8day();
     } else if (options.timescale === "yearly") {
         imgcol = pkg_PML.PMLV2_Yearly();
-
+        
         if (debug) {
             /** 1. Check the output of PML_V2 **/
-            var imgcol_PML = PML(2018, options.is_PMLV2);
-            // print(imgcol_PML, 'imgcol_PML');
-            trend_yearly(imgcol);                           // yearly trend
-            
+            imgcol_PML = PML(2003, options.is_PMLV2);
+            print(imgcol_PML, 'imgcol_PML');
+            // trend_yearly(imgcol);                           // yearly trend
             pkg_export.ExportImgCol(imgcol_PML.limit(2), null, options.Export);
         }
     }
+    if (verbose) print(imgcol);
     return imgcol;
-}
+};
 
 /** 
  * display maps of
@@ -861,7 +868,7 @@ pkg_PML.PML_main = function(opt) {
  * - GPP_2003
  */
 function trend_yearly(imgcol_year, show_imgcol){
-    var show_imgcol = show_imgcol || false;
+    show_imgcol = show_imgcol || false;
 
     // 2. trend
     var img_trend_gpp = pkg_trend.imgcol_trend(imgcol_year, 'GPP', true);
@@ -879,43 +886,18 @@ function trend_yearly(imgcol_year, show_imgcol){
 pkg_PML.add_ETsum = function(img){
     var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename("ET");
     return img.addBands(ET);
-}
+};
 
 exports = pkg_PML;
-
-
-// function img_GlobalSum(img, bands, scale) {
-//     bands = bands || img.bandNames();
-//     scale = scale || 50000;
-//     /** define reducer */
-//     // define reduction function (client-side), see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Reduce
-//     var combine = function (reducer, prev) { return reducer.combine(prev, null, true); };
-//     var reducers = [ee.Reducer.mean(), ee.Reducer.count(), ee.Reducer.stdDev()];
-//     // var reducer = ee.Reducer.sum();
-//     // print(reducers.slice(1), 'reducers.slice(1)');
-//     var reducer = reducers.slice(1).reduce(combine, reducers[0]);
-
-//     var dict = img.select(bands).reduceRegion({
-//         reducer: reducer,
-//         geometry: bounds,
-//         scale: scale, maxPixels: 1e13, tileScale: 16
-//     });
-
-//     var fc = ee.FeatureCollection(ee.Feature(null, dict));
-//     Export.table.toDrive({
-//         collection: fc,
-//         description: 'temp',
-//         folder: "IGBP",
-//         fileFormat: 'GeoJSON'
-//     });
-//     return fc;
-// }
-
-// function imgcol_globalSum() {
-//     Export.table.toDrive({
-//         collection: x,
-//         description: task,
-//         folder: "IGBP",
-//         fileFormat: 'GeoJSON'
-//     });
-// }
+/** ------------------------------------------------------------------------ */
+var __main__ = true;
+if (__main__) {
+  var opt = {
+    year_begin: 2003, 
+    year_end  : 2003,
+    folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_dynamic", // _staticLC2003
+    // folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_static", // _staticLC2003
+    timescale : "yearly", 
+  };
+  var imgcol = pkg_PML.PML_main(opt, true);
+}
