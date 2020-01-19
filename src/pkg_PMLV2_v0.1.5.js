@@ -50,6 +50,10 @@ var pkg_PML = {};
  *     MODIS leaf area index and the Penman-Monteith equation, Water Resour. Res., 
  *     44, W10419, doi:10.1029/2007WR006562.
  */
+var dataset = {};
+
+var I_interp = true;
+var meth_interp = 'bilinear'; // or 'bicubic'; for meteometeorological forcing spatial interpolatation
 
 /** LOAD REQUIRED PACKAGES */
 var pkg_mov = require('users/kongdd/public:Math/pkg_movmean.js'); //movmean
@@ -60,91 +64,102 @@ var pkg_export = require('users/kongdd/public:pkg_export2.js');
 var pkg_vis = require('users/kongdd/public:pkg_vis.js');
 // var points     = require('users/kongdd/public:data/flux_points.js').points;
 
-var I_interp = true; // whether Interpolate MODIS LAI, Emissivity and Albedo
-
-// `meth_interp` is used to resample  into high-resolution
-// not suggest 'biculic'. bicubic can't constrain values in reasonable boundary.
-var meth_interp = 'bilinear'; // or 'bicubic'; for meteometeorological forcing spatial interpolatation
-var filter_date_all = ee.Filter.date('2002-07-01', '2019-12-31');
-
-/** fix MCD12Q1_006 land cover code. */
-var ImgCol_land = imgcol_land.select(0).map(function (land) {
-    //for MCD12Q1_006 water and unc type is inverse
-    land = land.remap([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
-        [17, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0]);
-    return (land);
-});
-
-// var land = ee.Image(ImgCol_land.first());
-// Map.addLayer(land);
-
-var mean_albedo = imgcol_albedo.select(0).mean().multiply(0.001), // multiple year mean
-    mean_emiss = imgcol_emiss.select(0).mean().expression('b() * 0.002 + 0.49'); // multiple year mean
-var land_mask = mean_emiss.mask(); // mask lead to export error, unknow reason
-
-/** 1.1 GLDAS and CO2 */
-var ImgCol_co2 = co2.toList(co2.size())
-    .map(function (f) {
-        f = ee.Feature(f);
-        var date = ee.Date.parse('YYYY-MM-dd', f.get('date'));
-        // print(date);
-        return ee.Image.constant(f.get('average'))
-            .toFloat()
-            .set('system:time_start', date.millis())
-            .set('system:id', date.format('YYYY-MM-dd'))
-            .set('system:index', date.format('YYYY-MM-dd'));
-    });
-ImgCol_co2 = ee.ImageCollection(ImgCol_co2).select([0], ['co2'])
-    .filter(filter_date_all)
-    .sort("system:time_start");
-// print(ImgCol_co2)
-ImgCol_gldas = ImgCol_gldas.filter(filter_date_all);
-ImgCol_gldas = pkg_join.SaveBest(ImgCol_gldas, ImgCol_co2);
-
-/** 1.2 MODIS products: LAI, Albedo, Emissivity  */
 function print_1th(imgcol) {
     var img = ee.Image(imgcol.first());
     print(img);
 }
 
+function init_dataset() {
+    if (!pkg_main.is_empty_dict(dataset)) return;
+    // var I_interp = true; // whether Interpolate MODIS LAI, Emissivity and Albedo
+    // `meth_interp` is used to resample  into high-resolution
+    // not suggest 'biculic'. bicubic can't constrain values in reasonable boundary.
+    
+    var filter_date_all = ee.Filter.date('2002-07-01', '2019-12-31');
 
-if (I_interp) {
-    var imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').smoothed
-        .map(function (img) { return img.multiply(0.1).copyProperties(img, img.propertyNames()); }); //scale factor 0.1
-    imgcol_lai = ee.ImageCollection(imgcol_lai.toList(2000));
-    // print(imgcol_lai);
+    /** fix MCD12Q1_006 land cover code. */
+    var ImgCol_land = imgcol_land.select(0).map(function (land) {
+        //for MCD12Q1_006 water and unc type is inverse
+        land = land.remap([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+            [17, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0]);
+        return (land);
+    });
 
-    imgcol_emiss = ee.ImageCollection(imgcol_emiss.toList(1000))
-        .map(function (img) {
-            var emiss = img.select(0).expression('b() * 0.002 + 0.49'); //.toFloat(); //.toUint8()
-            return img.select('qc').addBands(emiss);
-        }).select([1, 0], ['Emiss', 'qc']);
+    // var land = ee.Image(ImgCol_land.first());
+    // Map.addLayer(land);
+    // var mean_albedo = imgcol_albedo.select(0).mean().multiply(0.001), // multiple year mean
+    //     mean_emiss = imgcol_emiss.select(0).mean().expression('b() * 0.002 + 0.49'); // multiple year mean
+    // var land_mask = mean_emiss.mask(); // mask lead to export error, unknow reason
 
-    imgcol_albedo = ee.ImageCollection(imgcol_albedo.toList(1000))
-        .map(function (img) {
-            var albedo = img.select(0).multiply(0.001); //.toFloat();
-            return img.select(1).addBands(albedo);
-        }).select([1, 0], ['Albedo', 'qc']);//scale factor 0.001, no units;
-    // print('Interped');
-} else {
-    /** No Interpolation MODIS INPUTS */
-    imgcol_lai = ee.ImageCollection('MODIS/006/MCD15A3H').select('Lai')
-        .map(function (img) { return img.multiply(0.1).copyProperties(img, img.propertyNames()); }); //scale factor 0.1
+    /** 1.1 GLDAS and CO2 */
+    var ImgCol_co2 = co2.toList(co2.size())
+        .map(function (f) {
+            f = ee.Feature(f);
+            var date = ee.Date.parse('YYYY-MM-dd', f.get('date'));
+            // print(date);
+            return ee.Image.constant(f.get('average'))
+                .toFloat()
+                .set('system:time_start', date.millis())
+                .set('system:id', date.format('YYYY-MM-dd'))
+                .set('system:index', date.format('YYYY-MM-dd'));
+        });
+    ImgCol_co2 = ee.ImageCollection(ImgCol_co2).select([0], ['co2'])
+        .filter(filter_date_all)
+        .sort("system:time_start");
+    // print(ImgCol_co2)
+    ImgCol_gldas = ImgCol_gldas.filter(filter_date_all);
+    ImgCol_gldas = pkg_join.SaveBest(ImgCol_gldas, ImgCol_co2);
+    
+    var imgcol_lai;
+    /** 1.2 MODIS products: LAI, Albedo, Emissivity  */
+    if (I_interp) {
+        imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').smoothed
+            .map(function (img) { return img.multiply(0.1).copyProperties(img, img.propertyNames()); }); //scale factor 0.1
+        imgcol_lai = ee.ImageCollection(imgcol_lai.toList(2000));
+        // print(imgcol_lai);
 
-    imgcol_emiss = ee.ImageCollection('MODIS/006/MOD11A2')
-        .select(['Emis_31', 'Emis_32'])
-        .map(function (img) {
-            return img.reduce(ee.Reducer.mean()).multiply(0.002).add(0.49)
-                .copyProperties(img, ['system:time_start', 'system:id']);
-        }).select([0], ['Emiss']);
+        imgcol_emiss = ee.ImageCollection(imgcol_emiss.toList(1000))
+            .map(function (img) {
+                var emiss = img.select(0).expression('b() * 0.002 + 0.49'); //.toFloat(); //.toUint8()
+                return img.select('qc').addBands(emiss);
+            }).select([1, 0], ['Emiss', 'qc']);
 
-    var Albedo_raw = ee.ImageCollection('MODIS/006/MCD43A3').select(['Albedo_WSA_shortwave'])
-        .map(pkg_trend.add_dn(true));
-    imgcol_albedo = pkg_trend.aggregate_prop(Albedo_raw, 'd8', 'mean')
-        .map(function (img) { return img.addBands(img.multiply(0.001)).select([1]); })
-        .select([0], ['Albedo']);
-    // print('No Interped');
+        imgcol_albedo = ee.ImageCollection(imgcol_albedo.toList(1000))
+            .map(function (img) {
+                var albedo = img.select(0).multiply(0.001); //.toFloat();
+                return img.select(1).addBands(albedo);
+            }).select([1, 0], ['Albedo', 'qc']);//scale factor 0.001, no units;
+        // print('Interped');
+    } else {
+        /** No Interpolation MODIS INPUTS */
+        imgcol_lai = ee.ImageCollection('MODIS/006/MCD15A3H').select('Lai')
+            .map(function (img) { return img.multiply(0.1).copyProperties(img, img.propertyNames()); }); //scale factor 0.1
+
+        imgcol_emiss = ee.ImageCollection('MODIS/006/MOD11A2')
+            .select(['Emis_31', 'Emis_32'])
+            .map(function (img) {
+                return img.reduce(ee.Reducer.mean()).multiply(0.002).add(0.49)
+                    .copyProperties(img, ['system:time_start', 'system:id']);
+            }).select([0], ['Emiss']);
+
+        var Albedo_raw = ee.ImageCollection('MODIS/006/MCD43A3').select(['Albedo_WSA_shortwave'])
+            .map(pkg_trend.add_dn(true));
+        imgcol_albedo = pkg_trend.aggregate_prop(Albedo_raw, 'd8', 'mean')
+            .map(function (img) { return img.addBands(img.multiply(0.001)).select([1]); })
+            .select([0], ['Albedo']);
+        // print('No Interped');
+    }
+    
+    dataset = {
+        ImgCol_land  : ImgCol_land, 
+        ImgCol_gldas : ImgCol_gldas,
+        // ImgCol_co2   : ImgCol_co2, 
+        imgcol_lai   : imgcol_lai,
+        imgcol_emiss : imgcol_emiss, 
+        imgcol_albedo: imgcol_albedo,
+    };
 }
+
 // print(imgcol_lai.filterDate('2003-01-01', '2003-12-31'));
 // print_1th(imgcol_emiss);
 // print_1th(imgcol_albedo);
@@ -167,9 +182,10 @@ var maps = [];
 
 var Figure1 = false;
 if (Figure1) {
-    var imgcol_lai_anorm = yearly_anomaly(imgcol_lai, 'LAI');
-    var imgcol_albedo_anorm = yearly_anomaly(imgcol_albedo);
-    var imgcol_emiss_anorm = yearly_anomaly(imgcol_emiss);
+    init_dataset();
+    var imgcol_lai_anorm = yearly_anomaly(dataset.imgcol_lai, 'LAI');
+    var imgcol_albedo_anorm = yearly_anomaly(dataset.imgcol_albedo);
+    var imgcol_emiss_anorm = yearly_anomaly(dataset.imgcol_emiss);
 
     var delta, vis;
     var colors = ["ff0d01", "fafff5", "2aff03"];
@@ -291,7 +307,7 @@ pkg_PML.fill_options = function(opt, verbose){
     options.timescale     = timescale; 
     options.bands         = bands;   
     
-    if (verbose) print(options);
+    if (verbose) print('PML options', options);
 };
 
 /** 2. ------------------------------------------------------------------- */
@@ -313,6 +329,9 @@ function PML_INPUTS_d8(begin_year, end_year) {
         begin_yearStr.cat("-07-01"), begin_yearStr.cat("-01-01"))),
         date_end = ee.Date(end_yearStr.cat("-12-31"));
     var filter_date = ee.Filter.date(date_begin, date_end);
+    
+    var filter_date_static2003 = ee.Filter.date('2003-01-01', '2003-12-31');
+    var filter_date_modis = (options.is_dynamic_lc) ? filter_date : filter_date_static2003;
     // print(date_begin, date_end);
 
     /** MODIS LAI, Albedo, Emiss */
@@ -322,7 +341,7 @@ function PML_INPUTS_d8(begin_year, end_year) {
     //     .sort("system:time_start");
 
     /** 4-day to 8-day */
-    var LAI_d4 = imgcol_lai.filter(filter_date);//.merge(lai_miss);
+    var LAI_d4 = dataset.imgcol_lai.filter(filter_date_modis);//.merge(lai_miss);
     LAI_d4 = LAI_d4.map(pkg_trend.add_dn(true, 8));
     // print(imgcol_lai);
 
@@ -338,12 +357,12 @@ function PML_INPUTS_d8(begin_year, end_year) {
     // Map.addLayer(LAI_d4, {}, 'LAI_d4');
     // Map.addLayer(LAI_d8, {}, 'LAI_d8');
     // LAI has missing images, need to fix in the future
-    var Albedo_d8 = imgcol_albedo.filter(filter_date);
-    var Emiss_d8 = imgcol_emiss.filter(filter_date);
+    var Albedo_d8 = dataset.imgcol_albedo.filter(filter_date_modis);
+    var Emiss_d8 = dataset.imgcol_emiss.filter(filter_date_modis);
 
     var modis_input = pkg_join.SaveBest(Emiss_d8, LAI_d8);
     modis_input = pkg_join.SaveBest(modis_input, Albedo_d8);
-
+ 
     // print(modis_input);
     if (I_interp) {
         // add qc bands
@@ -353,13 +372,13 @@ function PML_INPUTS_d8(begin_year, end_year) {
         });
     }
 
-    var gldas_input = ImgCol_gldas.filter(filter_date);
+    var gldas_input = dataset.ImgCol_gldas.filter(filter_date);
     if (meth_interp === 'bilinear' || meth_intterp === 'bicubic') {
         gldas_input = gldas_input.map(function (img) {
             return img.resample(meth_interp).copyProperties(img, img.propertyNames());
         });
     }
-
+    
     var pml_input = pkg_join.InnerJoin(modis_input, gldas_input).sort("system:time_start");
     // Map.addLayer(pml_input, {}, 'pml_input');
     // Map.addLayer(modis_input, {}, 'modis_input');
@@ -502,8 +521,9 @@ function PML(year, is_PMLV2) {
     var year_land = ee.Algorithms.If(year.gt(year_max), year_max,
         ee.Algorithms.If(year.lt(year_min), year_min, year));
 
+    if (options.is_dynamic_lc) year_land = 2003; // dynamic landcover
     var filter_date_land = ee.Filter.calendarRange(year_land, year_land, 'year');
-    var land = ee.Image(ImgCol_land.filter(filter_date_land).first()); //land_raw was MODIS/051/MCD12Q1
+    var land = ee.Image(dataset.ImgCol_land.filter(filter_date_land).first()); //land_raw was MODIS/051/MCD12Q1
 
     /** remove water, snow and ice, and unclassified land cover using updateMask */
     // var mask     = land.expression('b() != 0 && b() != 15 && b() != 17');
@@ -765,8 +785,9 @@ function PML(year, is_PMLV2) {
 
     var INPUTS = PML_INPUTS_d8(year);
     var PML_Imgs = PML_period(INPUTS);
+    print(INPUTS)
     // Map.addLayer(INPUTS, {}, 'INPUT');
-    Map.addLayer(PML_Imgs, {}, 'PML_Imgs');
+    // Map.addLayer(PML_Imgs, {}, 'PML_Imgs');
     return PML_Imgs;
 }
 
@@ -816,6 +837,7 @@ pkg_PML.PMLV2_Yearly = function() {
     // enable debug function
     var imgcol_year = years.map(func_yearly);
     
+    print(imgcol_year);
     imgcol_year = ee.ImageCollection(imgcol_year);
     if (options.is_save) pkg_export.ExportImgCol(imgcol_year, null, options.Export, options.prefix);
     return(imgcol_year);
@@ -836,6 +858,7 @@ var opt = {
 pkg_PML.PML_main(opt);
  */
 pkg_PML.PML_main = function(opt, verbose) {
+    init_dataset();
     pkg_PML.fill_options(opt, verbose);
     
     var imgcol_PML, img_year;
@@ -892,12 +915,47 @@ exports = pkg_PML;
 /** ------------------------------------------------------------------------ */
 var __main__ = true;
 if (__main__) {
-  var opt = {
-    year_begin: 2003, 
-    year_end  : 2003,
-    folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_dynamic", // _staticLC2003
-    // folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_static", // _staticLC2003
-    timescale : "yearly", 
-  };
-  var imgcol = pkg_PML.PML_main(opt, true);
+    // default is dynamic
+    var opt = {
+        year_begin: 2003,
+        year_end  : 2004,
+        folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_dynamic", // _staticLC2003
+        // folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_static", // _staticLC2003
+        timescale : "yearly", 
+        is_dynamic_lc: true, 
+        // is_save: false
+    };
+    var imgcol_new, imgcol_org;
+    // dynamic
+    // imgcol_new = pkg_PML.PML_main(opt, true);
+    
+    // static
+    opt.is_dynamic_lc = false;
+    opt.folder = "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_static";
+    imgcol_org = pkg_PML.PML_main(opt, true);
+    
+    var is_compare = false;
+    if (is_compare) {
+        // compare with previous version
+        // var imgcol_new = ee.ImageCollection('projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_dynamic');
+        // var imgcol_org = ee.ImageCollection('projects/pml_evapotranspiration/PML/V2/yearly');
+        var imgcol_diff = pkg_join.ImgColFun(imgcol_new, imgcol_org, pkg_join.Img_absdiff);
+        
+        // print(pkg_export.getProj(imgcol_new), pkg_export.getProj(imgcol_org))
+        var delta = 100;
+        var vis = { min: -delta, max: delta, bands:'Ec', palette: ["ff0d01", "fafff5", "2aff03"] };
+        
+        // pkg_vis.grad_legend(vis, 'new-org');
+        
+        vis_et.bands = "ET";
+        // print(vis_et)
+        function show_ET_map(imgcol, label) {
+            var img = pkg_PML.add_ETsum(imgcol.first());
+            Map.addLayer(img, vis_et, label);    
+        }
+        show_ET_map(imgcol_org, 'org');
+        show_ET_map(imgcol_new, 'new');
+        Map.addLayer(imgcol_diff, vis, 'new-org');
+        pkg_vis.grad_legend(vis_et, 'ET'); 
+    }
 }
