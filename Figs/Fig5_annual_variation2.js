@@ -11,6 +11,7 @@ var MOD16A2_105 = ee.ImageCollection("MODIS/NTSG/MOD16A2/105"),
     MOD16A2 = ee.ImageCollection("MODIS/006/MOD16A2"),
     PML_yearly_s = ee.ImageCollection("projects/pml_evapotranspiration/PML/V2/PMLV2_yearly_v015_staticLC2003");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
+var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
 var imgcol_year, bands, folder, prefix, years,  
     V2 = true;
     
@@ -74,10 +75,10 @@ var imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').smoothed
     .map(function (img) { return img.multiply(0.1).copyProperties(img, img.propertyNames()); }); //scale factor 0.1
 imgcol_lai = ee.ImageCollection(imgcol_lai.toList(2000));
 
-var imgcol_lai_yearly = aggregate_yearly(imgcol);
-IGBPmean(imgcol_lai_yearly, bands, scale, '_smoothed_yearly_LAI', year_begin, year_end);
+var imgcol_lai_yearly = aggregate_yearly(imgcol_lai);
+IGBPmean(imgcol_lai_yearly, [0], scale, 'LAI_smoothed_yearly_', year_begin, year_end);
+// IGBPmean(imgcol_year, bands, scale, prefix, year_begin, year_end);
 
-IGBPmean(imgcol_year, bands, scale, prefix, year_begin, year_end);
 // IGBPmean(MOD16A2_yr, bands, scale, 'MOD16A2_IGBP_mean_', year_begin, year_end);
 
 MOD17A2H_006 = ee.ImageCollection(MOD17A2H_006.toList(1000, 0));
