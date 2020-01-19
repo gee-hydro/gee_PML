@@ -748,8 +748,8 @@ if (exec) {
     }
 
     var year  = 2003,
-        year_begin = 2018, 
-        year_end   = year_begin + 1, //year_begin + 3,
+        year_begin = 2004, 
+        year_end   = year_begin + 14, //year_begin + 3,
         save  = true, //global param called in PML_main
         debug = false;
 
@@ -828,6 +828,7 @@ if (exec) {
     } else {
         // export parameter for yearly PML
         var folder_yearly = 'projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014_staticLC2003'; //_bilinear
+        var folder_yearly = 'projects/pml_evapotranspiration/PML/V2/PMLV2_yearly_v015_staticLC2003'; //_bilinear
         var task;
         
         for (var year = year_begin; year <= year_end; year++){

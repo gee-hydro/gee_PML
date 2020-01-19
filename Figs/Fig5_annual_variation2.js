@@ -6,9 +6,10 @@ var MOD16A2_105 = ee.ImageCollection("MODIS/NTSG/MOD16A2/105"),
     MOD16A2_006 = ee.ImageCollection("MODIS/006/MOD16A2"),
     ImgCol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
     PML_yearly_v14_old = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014"),
-    PML_yearly_s = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014_staticLC2003"),
+    PML_yearly_s_v14 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014_staticLC2003"),
     PML_yearly_d = ee.ImageCollection("projects/pml_evapotranspiration/PML/V2/yearly"),
-    MOD16A2 = ee.ImageCollection("MODIS/006/MOD16A2");
+    MOD16A2 = ee.ImageCollection("MODIS/006/MOD16A2"),
+    PML_yearly_s = ee.ImageCollection("projects/pml_evapotranspiration/PML/V2/PMLV2_yearly_v015_staticLC2003");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var imgcol_year, bands, folder, prefix, years,  
     V2 = true;
@@ -69,8 +70,14 @@ ImgCol_land = ImgCol_land.select(0).map(function(land){
 }).select([0], ['land']);
 
 ///////////////////////////////////////////////////////////////
+var imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').smoothed
+    .map(function (img) { return img.multiply(0.1).copyProperties(img, img.propertyNames()); }); //scale factor 0.1
+imgcol_lai = ee.ImageCollection(imgcol_lai.toList(2000));
 
-// IGBPmean(imgcol_year, bands, scale, prefix, year_begin, year_end);
+var imgcol_lai_yearly = aggregate_yearly(imgcol);
+IGBPmean(imgcol_lai_yearly, bands, scale, '_smoothed_yearly_LAI', year_begin, year_end);
+
+IGBPmean(imgcol_year, bands, scale, prefix, year_begin, year_end);
 // IGBPmean(MOD16A2_yr, bands, scale, 'MOD16A2_IGBP_mean_', year_begin, year_end);
 
 MOD17A2H_006 = ee.ImageCollection(MOD17A2H_006.toList(1000, 0));
@@ -84,9 +91,9 @@ MOD16A2_yr = MOD16A2_yr.select(['ET', 'PET']).map(function(img){
     var land = ee.Image(ImgCol_land.filterDate(date).first());
     return img.addBands(land);
 });
-var imgcol = d8ToYearly_mod(MOD16A2);
-print(imgcol);
-Map.addLayer(imgcol);
+// var imgcol = d8ToYearly_mod(MOD16A2);
+// print(imgcol);
+// Map.addLayer(imgcol);
 
 // var img = ee.Image(imgcol.first());
 // print(img.geometry());
@@ -216,4 +223,17 @@ function d8ToYearly(imcol_d8){
         //     .addBands([GPP, land])
     });
     return ee.ImageCollection(imgcol_year);
+}
+
+function aggregate_yearly(imgcol, band, scale_factor) {
+    band = band || 0;
+    scale_factor = scale_factor || 1;
+
+    imgcol = imgcol.select(band).filterDate('2003-01-01', '2018-12-31')
+        .map(pkg_trend.addSeasonProb);
+
+    var imgcol_annual = pkg_trend.aggregate_prop(imgcol, 'Year', 'mean')
+        .map(function (img) { return img.multiply(scale_factor).copyProperties(img, ["system:time_start"]); });
+    // .map(set_yearly_timestart);
+    return imgcol_annual;
 }
