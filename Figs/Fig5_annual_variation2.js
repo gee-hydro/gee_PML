@@ -4,35 +4,44 @@ var MOD16A2_105 = ee.ImageCollection("MODIS/NTSG/MOD16A2/105"),
     MOD17A2H_006 = ee.ImageCollection("MODIS/006/MOD17A2H"),
     pml_v1_yearly_v011 = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly"),
     MOD16A2_006 = ee.ImageCollection("MODIS/006/MOD16A2"),
-    ImgCol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
-    PML_yearly_v14_old = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014"),
-    PML_yearly_s_v14 = ee.ImageCollection("projects/pml_evapotranspiration/PML/v012/PML_V2_yearly_v014_staticLC2003"),
-    PML_yearly_d = ee.ImageCollection("projects/pml_evapotranspiration/PML/V2/yearly"),
     MOD16A2 = ee.ImageCollection("MODIS/006/MOD16A2"),
-    PML_yearly_s = ee.ImageCollection("projects/pml_evapotranspiration/PML/V2/PMLV2_yearly_v015_staticLC2003");
+    imgcol_lai = ee.ImageCollection("projects/pml_evapotranspiration/landcover_impact/LAI_smoothed_yearly"),
+    ImgCol_land  = ee.ImageCollection("projects/pml_evapotranspiration/landcover_impact/MCD12Q1_06"),
+    PML_yearly_d = ee.ImageCollection("projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_dynamic"),
+    PML_yearly_s = ee.ImageCollection("projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_static");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
-var imgcol_year, bands, folder, prefix, years,  
-    V2 = true;
+var imgcol_year, bands, folder, prefix, years;
+
+ImgCol_land = ImgCol_land.select([0], ['land']);
     
-if (V2){
-    imgcol_year = PML_yearly_d;
-    bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
-    folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly'; //
-    prefix = 'PMLV2_d_IGBP_mean_';
-    years  = ee.List.sequence(2003, 2018); 
-    
-    imgcol_year = PML_yearly_s;
-    bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
-    folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly'; //
-    prefix = 'PMLV2_s_IGBP_mean_';
-    years  = ee.List.sequence(2003, 2018); 
-} else{
-    imgcol_year = pml_v1_yearly_v011;
-    bands  = ['ET'];//['Ec', 'Ei', 'Es', 'ET_water'];
-    folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly'; //
-    prefix = 'PMLV1_IGBP_mean_';
-    years  = [2003, 2004, 2006, 2008, 2009, 2016];
+years = ee.List.sequence(2003, 2017); 
+var case = 1;
+switch(case){
+    case 1:
+        imgcol_year = PML_yearly_d;
+        bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
+        folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly'; //
+        prefix = 'PMLV2_d_IGBP_mean_';
+        break;
+    case 2:
+        imgcol_year = PML_yearly_s;
+        bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
+        folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_yearly'; //
+        prefix = 'PMLV2_s_IGBP_mean_';
+        break;
+    case 3:
+        imgcol_year = imgcol_lai;
+        bands = [0];
+        prefix = 'LAI_smoothed_yearly_';
+        break;
+    case -1: 
+        // PML_V1
+        imgcol_year = pml_v1_yearly_v011;
+        bands  = ['ET'];//['Ec', 'Ei', 'Es', 'ET_water'];
+        folder = 'projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_yearly'; //
+        prefix = 'PMLV1_IGBP_mean_';
+        break;
 }
 
 // years = years.reverse();
@@ -44,16 +53,15 @@ var range  = [-180, -60, 180, 90],
     scale  = 1e3,
     year_begin = 2003,
     year_end   = 2018;
-    
-// range  = [0, -60, 180, 90];
-// prefix = 'PMLV2_IGBP_mean_2_';
 
-imgcol_year = ee.ImageCollection(imgcol_year.toList(20, 0))
-    .map(function(img){
-        var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename('ET'); // + b("ET_water")
-        return img.addBands(ET);
-    });
-// print(imgcol_year);
+if (case in [1, 2, -1]) {
+    imgcol_year = ee.ImageCollection(imgcol_year.toList(20, 0))
+        .map(function(img){
+            var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename('ET'); // + b("ET_water")
+            return img.addBands(ET);
+        });    
+    // print(imgcol_year);
+}
     
 /** aggregated by IGBP */
 var IGBPcode     = ee.List.sequence(0, 17);
@@ -61,25 +69,13 @@ var IGBPname_all = ["UNC", "ENF", "EBF", "DNF", "DBF", "MF",
                "CSH", "OSH", "WSA", "SAV", "GRA", "WET", 
                "CRO", "URB", "CNV", "SNOW", "BSV", "WATER"];
 // var IGBPname = ee.List(IGBPname_all).slice(1, IGBPcode.length().add(1)); //ignore `UNC`
-
-/** fix MCD12Q1_006 land cover code. */
-ImgCol_land = ImgCol_land.select(0).map(function(land){
-    //for MCD12Q1_006 water and unc type is inverse
-    land = land.remap([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], 
-        [17, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0]); 
-    return(land);
-}).select([0], ['land']);
+IGBPmean(imgcol_year, bands, scale, prefix, year_begin, year_end);
 
 ///////////////////////////////////////////////////////////////
-var imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').smoothed
-    .map(function (img) { return img.multiply(0.1).copyProperties(img, img.propertyNames()); }); //scale factor 0.1
-imgcol_lai = ee.ImageCollection(imgcol_lai.toList(2000));
-
-var imgcol_lai_yearly = aggregate_yearly(imgcol_lai);
-IGBPmean(imgcol_lai_yearly, [0], scale, 'LAI_smoothed_yearly_', year_begin, year_end);
-// IGBPmean(imgcol_year, bands, scale, prefix, year_begin, year_end);
-
-// IGBPmean(MOD16A2_yr, bands, scale, 'MOD16A2_IGBP_mean_', year_begin, year_end);
+// var imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').smoothed
+//     .map(function (img) { return img.multiply(0.1).copyProperties(img, img.propertyNames()); }); //scale factor 0.1
+// imgcol_lai = ee.ImageCollection(imgcol_lai.toList(2000));
+// var imgcol_lai_yearly = aggregate_yearly(imgcol_lai);
 
 MOD17A2H_006 = ee.ImageCollection(MOD17A2H_006.toList(1000, 0));
 MOD17A2H_006 = MOD17A2H_006.select(['Gpp']);

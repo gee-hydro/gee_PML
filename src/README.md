@@ -27,3 +27,5 @@ MODIS 005 IGBP land cover code
 17 | WATER
  */
 ```
+
+geeadd mover --assetpath projects/pml_evapotranspiration/PML/MCD12Q1_06 --finalpath projects/pml_evapotranspiration/landcover_impact/MCD12Q1_06
