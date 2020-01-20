@@ -6,7 +6,7 @@ var MOD16A2_105 = ee.ImageCollection("MODIS/NTSG/MOD16A2/105"),
     MOD16A2_006 = ee.ImageCollection("MODIS/006/MOD16A2"),
     MOD16A2 = ee.ImageCollection("MODIS/006/MOD16A2"),
     imgcol_lai = ee.ImageCollection("projects/pml_evapotranspiration/landcover_impact/LAI_smoothed_yearly"),
-    ImgCol_land  = ee.ImageCollection("projects/pml_evapotranspiration/landcover_impact/MCD12Q1_06"),
+    ImgCol_land = ee.ImageCollection("projects/pml_evapotranspiration/landcover_impact/MCD12Q1_06"),
     PML_yearly_d = ee.ImageCollection("projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_dynamic"),
     PML_yearly_s = ee.ImageCollection("projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_static");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
@@ -16,8 +16,8 @@ var imgcol_year, bands, folder, prefix, years;
 ImgCol_land = ImgCol_land.select([0], ['land']);
     
 years = ee.List.sequence(2003, 2017); 
-var case = 1;
-switch(case){
+var icase = 1;
+switch(icase){
     case 1:
         imgcol_year = PML_yearly_d;
         bands  = ['GPP', 'ET']; //['GPP', 'Ec', 'Ei', 'Es', 'ET_water'];
@@ -44,6 +44,16 @@ switch(case){
         break;
 }
 
+print(imgcol_year)
+if (icase in [1, 2, -1]) {
+    imgcol_year = ee.ImageCollection(imgcol_year.toList(20, 0))
+        .map(function(img){
+            var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename('ET'); // + b("ET_water")
+            return img.addBands(ET);
+        });    
+    print(imgcol_year);
+}
+
 // years = years.reverse();
 print(years);
 
@@ -52,17 +62,8 @@ var range  = [-180, -60, 180, 90],
     bounds = ee.Geometry.Rectangle(range, 'EPSG:4326', false), //[xmin, ymin, xmax, ymax]
     scale  = 1e3,
     year_begin = 2003,
-    year_end   = 2018;
+    year_end   = 2017;
 
-if (case in [1, 2, -1]) {
-    imgcol_year = ee.ImageCollection(imgcol_year.toList(20, 0))
-        .map(function(img){
-            var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename('ET'); // + b("ET_water")
-            return img.addBands(ET);
-        });    
-    // print(imgcol_year);
-}
-    
 /** aggregated by IGBP */
 var IGBPcode     = ee.List.sequence(0, 17);
 var IGBPname_all = ["UNC", "ENF", "EBF", "DNF", "DBF", "MF", 
@@ -142,7 +143,7 @@ function IGBPmean(imgcol, bands, scale, prefix, year_begin, year_end){
             scale:scale, maxPixels: 1e13, tileScale: 16 });
         
         f = ee.Feature(null, f).set("IGBP", -1); //-1 means global mean
-        print(f);
+        // print(f);
         // 2. fs is grouped by IGBP
         var fs = IGBPcode.map(function(code){
             code = ee.Number(code);
