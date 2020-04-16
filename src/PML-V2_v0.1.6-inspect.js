@@ -21,31 +21,6 @@ var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165
  * # 03 Aug  , 2018; kongdd
  *     * Update PML_V2 images to 2019
  * 
- * @reference
- * 1. Zhang, Y., Kong, D., Gan, R., Chiew, F.H.S., McVicar, T.R., Zhang, Q., and 
- *     Yang, Y.. (2019) Coupled estimation of 500m and 8-day resolution global 
- *     evapotranspiration and gross primary production in 2002-2017. 
- *     Remote Sens. Environ. 222, 165-182, https://doi:10.1016/j.rse.2018.12.031 
- * 2. Kong, D., Zhang, Y., Gu, X., & Wang, D. (2019). A robust method
- *     for reconstructing global MODIS EVI time series on the Google Earth Engine.
- *     *ISPRS Journal of Photogrammetry and Remote Sensing*, *155*(May), 13–24.
- *     https://doi.org/10.1016/j.isprsjprs.2019.06.014
- * 3. Gan, R., Zhang, Y., Shi, H., Yang, Y., Eamus, D., Cheng, L., Chiew, F.H.S., 
- *     Yu, Q., 2018. Use of satellite leaf area index estimating evapotranspiration 
- *     and gross assimilation for Australian ecosystems. Ecohydrology e1974. 
- *     https://doi.org/10.1002/eco.1974
- * 4. Zhang, Y., Peña-Arancibia, J.L., McVicar, T.R., Chiew, F.H.S., Vaze, J., 
- *     Liu, C., Lu, X., Zheng, H., Wang, Y., Liu, Y.Y., Miralles, D.G., Pan, M. (2016), 
- *     Multi-decadal trends in global terrestrial evapotranspiration and its 
- *     components. Scientific Reports, 6(1).
- * 5. Zhang, Y., R. Leuning, L. B. Hutley, J. Beringer, I. McHugh, and J. P. Walker (2010), 
- *     Using long‐term water balances to parameterize surface conductances and 
- *     calculate evaporation at 0.05° spatial resolution, Water Resour. Res., 
- *     46, W05512, doi:10.1029/2009WR008716.
- * 6. Leuning, R., Y. Q. Zhang, A. Rajaud, H. Cleugh, and K. Tu (2008), 
- *     A simple surface conductance model to estimate regional evaporation using 
- *     MODIS leaf area index and the Penman-Monteith equation, Water Resour. Res., 
- *     44, W10419, doi:10.1029/2007WR006562.
  */
 
 /** LOAD REQUIRED PACKAGES */
@@ -55,6 +30,7 @@ var pkg_main = require('users/kongdd/public:pkg_main.js');
 var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
 var pkg_export = require('users/kongdd/public:pkg_export.js');
 var pkg_vis = require('users/kongdd/public:pkg_vis.js');
+var pkg_PML = require('users/kongdd/gee_PML:pkg_PML.js');
 // var points     = require('users/kongdd/public:data/flux_points.js').points;
 
 var prj = pkg_export.getProj(imgcol_land);
@@ -65,44 +41,6 @@ var I_interp = true; // whether Interpolate MODIS LAI, Emissivity and Albedo
 // not suggest 'biculic'. bicubic can't constrain values in reasonable boundary.
 var meth_interp = 'bilinear'; // or 'bicubic'; for meteometeorological forcing spatial interpolatation
 var filter_date_all = ee.Filter.date('2002-07-01', '2019-12-31');
-
-/**
-MODIS 005 IGBP land cover code
-% 0 Water Bodies
-% 1 Evergreen Needleleaf Forest
-% 2 Evergreen Broadleaf Forest
-% 3 Deciduous Needleleaf Forest
-% 4 Deciduous Broadleaf Forest
-% 5 Mixed Forest
-% 6 Closed Shrublands
-% 7 Open Shrublands
-% 8 Woody Savannas
-% 9 Savannas
-% 10 Grasslands
-% 11 Permanent Wetlands
-% 12 Croplands
-% 13 Urban and Built-Up
-% 14 Cropland/Natural Vegetation Mosaic
-% 15 Permanent Snow and Ice
-% 16 Barren or Sparsely Vegetated
-% 17 Unclassified
-
-/**
-006 landcover 
-0  | UNC
-17 | WATER
- */
-
-/** fix MCD12Q1_006 land cover code. */
-var ImgCol_land = imgcol_land.select(0).map(function (land) {
-    //for MCD12Q1_006 water and unc type is inverse
-    land = land.remap([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
-        [17, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0]);
-    return (land);
-});
-
-// var land = ee.Image(ImgCol_land.first());
-// Map.addLayer(land);
 
 var mean_albedo = imgcol_albedo.select(0).mean().multiply(0.001), // multiple year mean
     mean_emiss = imgcol_emiss.select(0).mean().expression('b() * 0.002 + 0.49'); // multiple year mean
@@ -132,7 +70,6 @@ function print_1th(imgcol) {
     var img = ee.Image(imgcol.first());
     print(img);
 }
-
 
 if (I_interp) {
     var imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').smoothed
@@ -174,72 +111,6 @@ if (I_interp) {
 // print_1th(imgcol_lai);
 // print_1th(imgcol_emiss);
 // print_1th(imgcol_albedo);
-
-// annual variation
-var options_vis = {
-    year_start: 2011,
-    year_end: 2018,
-    nrow: 2,
-    map: {
-        fullscreenControl: false,
-        mapTypeControl: false,
-        zoomControl: false,
-        layerList: false
-    },
-    // center: {lon: 0, lat: 15, zoom: 3}, 
-    center: { lon: -60, lat: -5, zoom: 4 }
-};
-var maps = [];
-
-var Figure1 = false;
-if (Figure1) {
-    var imgcol_lai_anorm = yearly_anomaly(imgcol_lai, 'LAI');
-    var imgcol_albedo_anorm = yearly_anomaly(imgcol_albedo);
-    var imgcol_emiss_anorm = yearly_anomaly(imgcol_emiss);
-
-    var delta, vis;
-    var colors = ["ff0d01", "fafff5", "2aff03"];
-    
-    
-    delta = 0.5 ; vis = { min: -delta, max: delta, palette: colors }; // 1. lai
-    delta = 0.01; vis = { min: -delta, max: delta, palette: colors }; // 2. albedo
-    delta = 0.05; vis = { min: -delta, max: delta, palette: colors }; // 3. emiss
-    
-    options_vis.vis = vis;
-    // print(imgcol_lai_anorm);
-    // pkg_vis.show_annual_imgcol(maps, imgcol_lai_anorm, options_vis);
-    // pkg_vis.show_annual_imgcol(maps, imgcol_albedo_anorm, options_vis);
-    pkg_vis.show_annual_imgcol(maps, imgcol_emiss_anorm, options_vis);
-}
-
-
-function aggregate_yearly(imgcol, band, scale_factor) {
-    band = band || 0;
-    scale_factor = scale_factor || 1;
-
-    imgcol = imgcol.select(band).filterDate('2003-01-01', '2018-12-31')
-        .map(pkg_trend.addSeasonProb);
-
-    var imgcol_annual = pkg_trend.aggregate_prop(imgcol, 'Year', 'mean')
-        .map(function (img) { return img.multiply(scale_factor).copyProperties(img, ["system:time_start"]); });
-    // .map(set_yearly_timestart);
-    return imgcol_annual;
-}
-function yearly_anomaly(imgcol, band, scale_factor, is_yearly) {
-    if (is_yearly === undefined) {
-        is_yearly = false;
-    }
-
-    if (!is_yearly) {
-        imgcol = aggregate_yearly(imgcol);
-    }
-
-    var img_2003 = imgcol.first();
-    var imgcol_diff = imgcol
-        .map(function (img) { return img.subtract(img_2003).copyProperties(img, ["system:time_start"]); });
-    // print(imgcol_annual.limit(3), imgcol_diff.limit(3));
-    return imgcol_diff;
-}
 
 /**
  * Prepare INPUT datset for PML_V2
@@ -319,101 +190,13 @@ var Gsc = 0.0820,  // solar constant in unit MJ m-2 min-1,
     kmar = 0.40,    // von Karman's constant 0.40 
     Zob = 15,      // m, making sure higher than hc
     Cp = 1.0164,  // 4.2 * 0.242, specific heat at constant pressure, 1.013  [J g-1 0C-1]
-    epsl = 0.622,   // ratio molecular weight of water vapour/dry air
+    epsl = 0.622;   // ratio molecular weight of water vapour/dry air
 
-    /** PML_v1 parameters for Gc */
-    kQ = 0.4488,  // extinction coefficient
-    kA = 0.7,     // the attenuation of net all-wave irradicance, typically about 0.6-0.8 (Denmend, 1976, Kelliher FM et al., (1995))
+/** PML_v1 parameters for Gc */
+var kQ  = 0.4488,  // extinction coefficient
+    kA  = 0.7,     // the attenuation of net all-wave irradicance, typically about 0.6-0.8 (Denmend, 1976, Kelliher FM et al., (1995))
     Q50 = 30,      // the value of absorbed PAR when gs=gsx/2, W/m2
-    D0 = 0.7;     // the value of VPD when stomtal conductance is reduced  kpa 
-
-/**
- * SEVEN OPTIMIZED PARAMETERS
- * 
- * Alpha  : initial photochemical efficiency, 0.02-0.08
- * Thelta : the initla slope of the slope of CO2 response curve[umol m-2 s-1]/[umol mol-1], 1
- * m      : Ball-Berry coefficient 2-20
- * Am_25  : the maximum catalytic capacity of Rubisco per unit leaf area at 25 degree
- * kQ     : the value of VPD when stomtal conductance is reduced 
- * kA     : extinction coefficient
- *
- * TWO INTERCEPTION PARAMETERS
- * S_sls  : specific canopy rainfall storage capacity per unit leaf area (mm)
- * fER0   : 
-set:
-13 (Urban and Built-Up)           = 5  (mixed forest)
-16 (Barren or Sparsely Vegetated) = 10 (grassland)
- */
-
-var Alpha_raw = ee.List([0.000, 0.041, 0.048, 0.041, 0.029, 0.029,
-    0.029, 0.029, 0.044, 0.029, 0.034, 0.026,
-    0.029, 0.029, 0.029, 0.000, 0.034, 0.000]);
-var Thelta_raw = ee.List([0.000, 0.069, 0.024, 0.069, 0.022, 0.036,
-    0.063, 0.063, 0.035, 0.036, 0.027, 0.038,
-    0.069, 0.036, 0.069, 0.000, 0.027, 0.000]);
-var m_raw = ee.List([0.000, 8.316, 10.602, 8.316, 10.930, 8.539,
-    6.320, 6.320, 6.500, 9.031, 6.250, 25.755,
-    8.404, 8.539, 8.404, 0.000, 6.250, 0.000]);
-var Am_25_raw = ee.List([0.000, 13.133, 13.875, 13.133, 10.805, 15.930,
-    12.812, 12.812, 13.000, 15.809, 46.375, 16.070,
-    20.181, 15.930, 20.181, 0.000, 46.375, 0.000]);
-var D0_raw = ee.List([0.700, 0.501, 0.536, 0.501, 0.552, 0.501,
-    0.575, 0.575, 0.747, 0.809, 0.544, 2.000,
-    0.696, 0.501, 0.696, 0.700, 0.544, 0.700]);
-var kQ_raw = ee.List([0.600, 0.914, 0.832, 0.914, 0.480, 0.593,
-    0.691, 0.691, 0.753, 1.000, 0.722, 0.644,
-    0.100, 0.593, 0.100, 0.600, 0.722, 0.600]);
-var kA_raw = ee.List([0.700, 0.899, 0.899, 0.899, 0.895, 0.680,
-    0.895, 0.895, 0.848, 0.895, 0.895, 0.899,
-    0.899, 0.680, 0.899, 0.700, 0.895, 0.700]);
-var S_sls_raw = ee.List([0.000, 0.123, 0.098, 0.123, 0.069, 0.131,
-    0.014, 0.014, 0.174, 0.049, 0.114, 0.010,
-    0.010, 0.131, 0.010, 0.000, 0.114, 0.000]);
-var fER0_raw = ee.List([0.000, 0.055, 0.085, 0.055, 0.010, 0.010,
-    0.010, 0.010, 0.109, 0.055, 0.023, 0.010,
-    0.158, 0.010, 0.158, 0.000, 0.023, 0.000]);
-var VPDmin_raw = ee.List([1.000, 0.657, 0.664, 0.657, 0.664, 0.657,
-    1.492, 1.492, 0.664, 1.032, 0.664, 1.399,
-    1.213, 0.657, 1.213, 1.000, 0.664, 1.000]);
-var VPDmax_raw = ee.List([4.000, 6.203, 4.570, 6.203, 6.305, 3.500,
-    4.086, 4.086, 3.938, 3.695, 3.625, 6.500,
-    3.500, 3.500, 3.500, 4.000, 3.625, 4.000]);
-
-/** LAIref (reference leaf area index), setting as 5 */
-/** Maximum stomtal conductance in a unite m/s, make sure Ga/Gc ~= 0 */
-var gsx_raw = ee.List([50.00, 3.2, 3.8, 3.2, 4.3, 3.1,
-    2.4, 2.4, 1.9, 3.7, 2.3, 16.3,
-    5.2, 5.00, 5.2, 50.00, 0.50, 4.00]) // update 26 Feb, 2018
-    .map(function (x) { return ee.Number(x).multiply(1e-3) });
-
-/** canopy height */
-var hc_raw = ee.List([0.01, 10, 10, 10, 10, 10,
-    1, 1, 5, 5, 0.2, 1,
-    0.5, 10, 1, 0.01, 0.05, 0.1]); //update 15 Feb, 2018
-
-/**
- * Construct parameters depend on landcover type
- *
- * @param  {ee.Image} landcover [description]
- * @param  {ee.List}  list      [description]
- * @return {ee.Image}           [description]
- */
-function propertyByLand_v2(landcover, list) {
-    landcover = ee.Image(landcover);
-    // modis landcover 18 types
-    var lands = ee.List.sequence(0, 17).map(function (i) {
-        i = ee.Number(i);
-        var land = landcover.eq(i).float();
-        var prop = ee.Number(list.get(i));
-        return land.multiply(prop);
-    });
-    return ee.ImageCollection(lands).sum();
-}
-
-/** Vapor Pressure in kPa with temperature in degC */
-function vapor_pressure(t) {
-    return t.expression('0.6108 * exp(17.27 * b() / (b() + 237.3))');
-}
+    D0  = 0.7;     // the value of VPD when stomtal conductance is reduced  kpa 
 
 /**P
  * PML_V2 (Penman-Monteith-Leuning) model
@@ -422,7 +205,6 @@ function vapor_pressure(t) {
  *     -- PML_daily(img)
  *     `PML_daily` has all the access of yearly land cover based parameters 
  *     (e.g. gsx, hc, LAIref, S_sls). 
- *     
  * 
  *     -- PML_year(INPUTS)
  *     
@@ -436,44 +218,23 @@ function vapor_pressure(t) {
  */
 function PML(year, is_PMLV2) {
     // fix landcover time range after 2013, 2014-2016
-    year = ee.Number(year);
-    var year_max = 2018,
-        year_min = 2001;
-    var year_land = ee.Algorithms.If(year.gt(year_max), year_max,
-        ee.Algorithms.If(year.lt(year_min), year_min, year));
+    // year = ee.Number(year);    
+    var img_param = pkg_PML.init_param_year(year, is_PMLV2);
+
+    var year_land = year;
+    if (year >= 2018) year_land = 2018;
+    if (year <= 2001) year_land = 2001;
 
     var filter_date_land = ee.Filter.calendarRange(year_land, year_land, 'year');
-    var land = ee.Image(ImgCol_land.filter(filter_date_land).first()); //land_raw was MODIS/051/MCD12Q1
-
-    /** remove water, snow and ice, and unclassified land cover using updateMask */
-    // var mask     = land.expression('b() != 0 && b() != 15 && b() != 17');
-    // land         = land.updateMask(mask);
-    // var landmask = ee.Image(1).updateMask(mask);
+    var land = ee.Image(pkg_PML.imgcol_land.filter(filter_date_land).first());
 
     /** Initial parameters */
-    // gsx, hc, LAIref, S_sls can be accessed by `PML_daily`, in its parent env
-    var gsx = propertyByLand_v2(land, gsx_raw),    //only for PML_v1
-        hc = propertyByLand_v2(land, hc_raw);
-
     if (is_PMLV2) {
-        var Alpha = propertyByLand_v2(land, Alpha_raw),
-            Thelta = propertyByLand_v2(land, Thelta_raw),
-            m = propertyByLand_v2(land, m_raw),
-            Am = propertyByLand_v2(land, Am_25_raw);
-        // Ca      = 380; //umol mol-1
-        D0 = propertyByLand_v2(land, D0_raw);
-        kQ = propertyByLand_v2(land, kQ_raw);
-        kA = propertyByLand_v2(land, kA_raw);
-        var VPDmin = propertyByLand_v2(land, VPDmin_raw);
-        var VPDmax = propertyByLand_v2(land, VPDmax_raw);
-
-        // VPDmin = 0.93; VPDmax = 4.3;
+        D0 = img_param.get('D0');
+        kQ = img_param.get('kQ');
+        kA = img_param.get('kA');
         // for PML_v1 D0, kQ, kA are constant parameters.
     }
-    // parameters for Ei
-    var LAIref = ee.Image(5), //propertyByLand_v2(land, LAIref_raw),
-        S_sls = propertyByLand_v2(land, S_sls_raw),
-        fER0 = propertyByLand_v2(land, fER0_raw);
 
     /**
      * Calculate daily PML GPP and ET using GLDAS and MODIS inputs.
@@ -540,7 +301,7 @@ function PML(year, is_PMLV2) {
         // var fvpd = VPD.expression('exp(-D0 * pow(b(), 2))', {D0:D0}); // yongqiang, f_VPD = exp(-D0 * VPD.^2);
         // var VPD_sqrt = VPD.sqrt();
         // var fvpd = VPD_sqrt.expression('b()*(b() < 1) + 1/b()*(b() >= 1)');
-        var fvpd = VPD.expression('(VPDmax - b())/(VPDmax - VPDmin)', { VPDmin: VPDmin, VPDmax: VPDmax })
+        var fvpd = img_param.expression("(b('VPDmax') - VPD)/(b('VPDmax') - b('VPDmin'))", { VPD: VPD})
             .min(1.0).max(0.0);
 
         if (is_PMLV2) {
@@ -549,10 +310,10 @@ function PML(year, is_PMLV2) {
             /** G flux part */
             var fT2 = Tavg.expression('exp(0.031*(b()-25))/(1 +exp(0.115*(b()-41)))').min(1.0);
 
-            var P1 = Am.multiply(Alpha).multiply(Thelta).multiply(PAR_mol),
-                P2 = Am.multiply(Alpha).multiply(PAR_mol),
-                P3 = Am.multiply(Thelta).multiply(Ca),
-                P4 = Alpha.multiply(Thelta).multiply(PAR_mol).multiply(Ca).divide(fT2);
+            var P1 = img_param.expression("b('Am') * b('Alpha') * b('Thlta')").multiply(PAR_mol);
+            var P2 = img_param.expression("b('Am') * b('Alpha')").multiply(PAR_mol);
+            var P3 = img_param.expression("b('Am') * b('Thlta')").multiply(Ca);
+            var P4 = img_param.expression("b('Alpha') * b('Thlta')").multiply(PAR_mol).multiply(Ca).divide(fT2);
 
             var Ags = P1.expression('Ca*P1/(P2*kQ + P4*kQ) * (kQ*LAI + log((P2+P3+P4)/(P2+P3*exp(kQ*LAI) + P4)))', //*fT2
                 { Ca: Ca, P1: P1, P2: P2, P3: P3, P4: P4, kQ: kQ, LAI: LAI, fT2: fT2 });  // umol cm-2 s-1
@@ -561,22 +322,22 @@ function PML(year, is_PMLV2) {
             var img_check = GPP.addBands([rou_a, gama, slop, PAR, PAR_mol, fT2, P1, P2, P3, P4])
                 .rename(['gpp', 'rou_a', 'gama', 'slop', 'par', 'par_mol', 'fT2', 'p1', 'p2', 'p3', 'p4']);
 
-            Gc = m.expression('m/Ca*Ags*1.6*fvpd_gc', { m: m, Ca: Ca, Ags: Ags, fvpd_gc: fvpd_gc });
+            Gc = img_param.expression('b("m")/Ca*Ags*1.6*fvpd_gc', { Ca: Ca, Ags: Ags, fvpd_gc: fvpd_gc });
             // Convert from mol m-2 s-1 to cm s-1 to m s-1
             Gc = Gc.expression('Gc*1e-2/(0.446*(273/(273+Tavg))*(Pa/101.3))',
                 { Gc: Gc, Tavg: Tavg, Pa: p }); // unit convert to m s-1
         } else {
             // Conductance and ET component
-            Gc = LAI.expression('gsx/kQ*log((PAR+Q50)/(PAR*exp(-kQ*LAI)+Q50))*fvpd_gc',
-                { gsx: gsx, kQ: kQ, PAR: PAR, Q50: Q50, LAI: LAI, fvpd_gc: fvpd_gc });
+            Gc = img_param.expression('b("gsx")/kQ*log((PAR+Q50)/(PAR*exp(-kQ*LAI)+Q50))*fvpd_gc',
+                { kQ: kQ, PAR: PAR, Q50: Q50, LAI: LAI, fvpd_gc: fvpd_gc });
         }
         Gc = Gc.max(1e-6);
         // known bug: bare, ice & snow, unc, all zero parameters will lead to p1, p2, p3, p4 = 0,
         //            GPP = 0/0(masked), and Ec = masked.
 
         /** AERODYNAMIC CONDUCTANCE */
-        var d = hc.multiply(0.64);
-        var zom = hc.multiply(0.13);
+        var d = img_param.select('hc').multiply(0.64);
+        var zom = img_param.select('hc').multiply(0.13);
         var zoh = zom.multiply(0.1);
         var uz = img.expression('log(67.8*Zob - 5.42)/4.87 * u2',
             { Zob: Zob, u2: u2 });
@@ -634,10 +395,10 @@ function PML(year, is_PMLV2) {
          * Van Dijk, A.I.J.M. and Warren, G., 2010. The Australian water resources assessment system. Version 0.5, 3(5). P39
          */
         var prcp = img.select('Prcp');
-        var fveg = LAI.expression('1 - exp(-LAI/LAIref)', { LAI: LAI, LAIref: LAIref });
-        var Sveg = S_sls.multiply(LAI);
+        var fveg = img_param.expression('1 - exp(-LAI/b("LAIref"))', { LAI: LAI});
+        var Sveg = img_param.select('S_sls').multiply(LAI);
 
-        var fER = fveg.multiply(fER0);
+        var fER = fveg.multiply(img_param.select('fER0'));
         var prcp_wet = LAI.expression('-log(1 - fER0) / fER0 * Sveg / fveg',
             { fER0: fER0, fveg: fveg, Sveg: Sveg });
         var Ei = LAI.expression('(P < Pwet) * fveg * P + (P >= Pwet) * ( fveg*Pwet + fER*(P - Pwet) )',
@@ -704,34 +465,8 @@ function PML(year, is_PMLV2) {
         return PML_Imgs;
     }
 
-    function Export() {
-        /** Export ImgCol into asset */
-        var save = true;
-        if (save) {
-            var dates = ee.List(INPUTS.aggregate_array('system:time_start'))
-                .map(function (date) { return ee.Date(date).format('yyyy-MM-dd'); }); //.getInfo(); //DATES of INPUT
-
-            // print('hello', PML_Imgs, dates);
-            var img = ee.Image(PML_Imgs.first());
-            // img = img.select(ee.List.sequence(0, 4)); //rm qc band
-            // var crs_trans = img.select('qc').projection().transform();
-            // img = img.reproject(crs, crs_trans);
-
-            // print(img, crs_trans);
-            // Map.addLayer(img);
-            // Map.addLayer(PML_Imgs, {}, 'PML_Imgs')
-            // print(PML_Imgs, dates);
-
-            // export_image(img, '2002-07-05_v6');
-            pkg_export.ExportImgCol(PML_Imgs, dates, options);
-            // pkg_export.ExportImg(img, range, '2002-07-05_v4', scale, drive, folder, crs)
-        } else {
-            print('PML_Imgs', PML_Imgs);
-        }
-    }
-
     var INPUTS = PML_INPUTS_d8(year);
-    print(INPUTS, 'INPUTS');
+    // print(INPUTS, 'INPUTS');
     // Map.addLayer(INPUTS, {}, 'INPUT');
 
     var PML_Imgs = PML_period(INPUTS);
@@ -746,42 +481,6 @@ var options = {
     type: 'asset',
     crs: 'SR-ORG:6974', //projects/pml_evapotranspiration
     crsTransform: prj.crsTransform
-}
-
-function img_GlobalSum(img, bands, scale) {
-    bands = bands || img.bandNames();
-    scale = scale || 50000;
-    /** define reducer */
-    // define reduction function (client-side), see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Reduce
-    var combine = function (reducer, prev) { return reducer.combine(prev, null, true); };
-    var reducers = [ee.Reducer.mean(), ee.Reducer.count(), ee.Reducer.stdDev()];
-    // var reducer = ee.Reducer.sum();
-    // print(reducers.slice(1), 'reducers.slice(1)');
-    var reducer = reducers.slice(1).reduce(combine, reducers[0]);
-
-    var dict = img.select(bands).reduceRegion({
-        reducer: reducer,
-        geometry: bounds,
-        scale: scale, maxPixels: 1e13, tileScale: 16
-    });
-
-    var fc = ee.FeatureCollection(ee.Feature(null, dict));
-    Export.table.toDrive({
-        collection: fc,
-        description: 'temp',
-        folder: "IGBP",
-        fileFormat: 'GeoJSON'
-    });
-    return fc;
-}
-
-function imgcol_globalSum() {
-    Export.table.toDrive({
-        collection: x,
-        description: task,
-        folder: "IGBP",
-        fileFormat: 'GeoJSON'
-    });
 }
 
 if (exec) {
@@ -825,25 +524,7 @@ if (exec) {
         // print(imgcol_PML, 'imgcol_PML');
         pkg_export.ExportImgCol(imgcol_PML.limit(2), null, options);
         // pkg_export.ExportImgCol(imgcol_PML.limit(2), null, range, cellsize, type, folder, crs, crsTransform);
-
         var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
-        // year = ee.Number(year);
-        // begin_date = ee.Date.fromYMD(year,1,1);
-        // ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
-
-        // // print(begin_date, ydays, year)
-
-        // imgcol_PML = PML(year, is_PMLV2);
-        // img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
-        //     .set('system:time_start', begin_date.millis())
-        //     .set('system:id', begin_date.format('YYYY-MM-dd'));
-
-        // print(imgcol_PML)
-        // print('imgcol_PML', ydays, imgcol_PML, img_year);
-        // check outliers
-        // var img = imgcol_PML.first(); //img_year; //
-        // var mask = img.select('Ec').expression('b() > 1e5 || b() < 0');
-        // Map.addLayer(img_year.select('GPP'), vis_gpp, 'img_year');
 
         var imgcol_year = years.map(function (year) {
             year = ee.Number(year);
@@ -910,3 +591,27 @@ if (exec) {
 exports = {
     PML: PML
 };
+
+// function Export() {
+//     /** Export ImgCol into asset */
+//     var save = true;
+//     if (save) {
+//         var dates = ee.List(INPUTS.aggregate_array('system:time_start'))
+//             .map(function (date) { return ee.Date(date).format('yyyy-MM-dd'); }); //.getInfo(); //DATES of INPUT
+
+//         // print('hello', PML_Imgs, dates);
+//         var img = ee.Image(PML_Imgs.first());
+//         // img = img.select(ee.List.sequence(0, 4)); //rm qc band
+//         // var crs_trans = img.select('qc').projection().transform();
+//         // img = img.reproject(crs, crs_trans);
+//         // print(img, crs_trans);
+//         // Map.addLayer(img);
+//         // Map.addLayer(PML_Imgs, {}, 'PML_Imgs')
+//         // print(PML_Imgs, dates);
+//         // export_image(img, '2002-07-05_v6');
+//         pkg_export.ExportImgCol(PML_Imgs, dates, options);
+//         // pkg_export.ExportImg(img, range, '2002-07-05_v4', scale, drive, folder, crs)
+//     } else {
+//         print('PML_Imgs', PML_Imgs);
+//     }
+// }

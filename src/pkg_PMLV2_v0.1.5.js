@@ -60,7 +60,7 @@ var pkg_mov = require('users/kongdd/public:Math/pkg_movmean.js'); //movmean
 var pkg_join = require('users/kongdd/public:pkg_join.js');
 var pkg_main = require('users/kongdd/public:pkg_main.js');
 var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
-var pkg_export = require('users/kongdd/public:pkg_export2.js');
+var pkg_export = require('users/kongdd/public:pkg_export.js');
 var pkg_vis = require('users/kongdd/public:pkg_vis.js');
 // var points     = require('users/kongdd/public:data/flux_points.js').points;
 
@@ -116,7 +116,7 @@ function init_dataset() {
         imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').smoothed
             .map(function (img) { return img.multiply(0.1).copyProperties(img, img.propertyNames()); }); //scale factor 0.1
         imgcol_lai = ee.ImageCollection(imgcol_lai.toList(2000));
-        // print(imgcol_lai);
+        print(imgcol_lai);
 
         imgcol_emiss = ee.ImageCollection(imgcol_emiss.toList(1000))
             .map(function (img) {
@@ -942,7 +942,7 @@ if (__main__) {
     // default is dynamic
     var opt = {
         year_begin: 2003,
-        year_end  : 2009,
+        year_end  : 2003,
         folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_dynamic", // _staticLC2003
         // folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_static", // _staticLC2003
         timescale : "yearly", 
