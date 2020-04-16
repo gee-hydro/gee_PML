@@ -7,6 +7,7 @@ var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165
     imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
     co2 = ee.FeatureCollection("projects/pml_evapotranspiration/PML_INPUTS/co2_mm_gl_2002-2019_8day");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
+
 var pkg_PML = {};
 // var pkg_PML = require('users/kongdd/gee_PML:src/pkg_PMLV2_v0.1.5.js');
 /**
@@ -942,8 +943,8 @@ if (__main__) {
     // default is dynamic
     var opt = {
         year_begin: 2003,
-        year_end  : 2003,
-        folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_dynamic", // _staticLC2003
+        year_end  : 2017,
+        folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v016_dynamic", // _staticLC2003
         // folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_static", // _staticLC2003
         timescale : "yearly", 
         is_dynamic_lc: true, 
@@ -951,11 +952,11 @@ if (__main__) {
     };
     var imgcol_new, imgcol_org;
     // dynamic
-    // imgcol_new = pkg_PML.PML_main(opt, true);
+    imgcol_new = pkg_PML.PML_main(opt, true);
     
     // static
     opt.is_dynamic_lc = false;
-    opt.folder = "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_static";
+    opt.folder = "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v016_static";
     imgcol_org = pkg_PML.PML_main(opt, true);
     
     var is_compare = false;
