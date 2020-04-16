@@ -1,11 +1,5 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165830543]),
-    ImgCol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_V21_8day_V2"),
-    imgcol_albedo = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d_v2"),
-    imgcol_emiss = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d"),
-    imgcol_lai_4d = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit_4d"),
-    imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
-    co2 = ee.FeatureCollection("projects/pml_evapotranspiration/PML_INPUTS/co2_mm_gl_2002-2019_8day");
+var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165830543]);
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 
 /**
@@ -20,7 +14,6 @@ var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165
  *     * Add trend inspection module
  * # 03 Aug  , 2018; kongdd
  *     * Update PML_V2 images to 2019
- * 
  */
 
 /** LOAD REQUIRED PACKAGES */
@@ -34,150 +27,6 @@ var pkg_PML = require('users/kongdd/gee_PML:pkg_PML.js');
 // var points     = require('users/kongdd/public:data/flux_points.js').points;
 
 var prj = pkg_export.getProj(imgcol_land);
-
-var I_interp = true; // whether Interpolate MODIS LAI, Emissivity and Albedo
-
-// `meth_interp` is used to resample  into high-resolution
-// not suggest 'biculic'. bicubic can't constrain values in reasonable boundary.
-var meth_interp = 'bilinear'; // or 'bicubic'; for meteometeorological forcing spatial interpolatation
-var filter_date_all = ee.Filter.date('2002-07-01', '2019-12-31');
-
-var mean_albedo = imgcol_albedo.select(0).mean().multiply(0.001), // multiple year mean
-    mean_emiss = imgcol_emiss.select(0).mean().expression('b() * 0.002 + 0.49'); // multiple year mean
-var land_mask = mean_emiss.mask(); // mask lead to export error, unknow reason
-
-/** 1.1 GLDAS and CO2 */
-var ImgCol_co2 = co2.toList(co2.size())
-    .map(function (f) {
-        f = ee.Feature(f);
-        var date = ee.Date.parse('YYYY-MM-dd', f.get('date'));
-        // print(date);
-        return ee.Image.constant(f.get('average'))
-            .toFloat()
-            .set('system:time_start', date.millis())
-            .set('system:id', date.format('YYYY-MM-dd'))
-            .set('system:index', date.format('YYYY-MM-dd'));
-    });
-ImgCol_co2 = ee.ImageCollection(ImgCol_co2).select([0], ['co2'])
-    .filter(filter_date_all)
-    .sort("system:time_start");
-// print(ImgCol_co2)
-ImgCol_gldas = ImgCol_gldas.filter(filter_date_all);
-ImgCol_gldas = pkg_join.SaveBest(ImgCol_gldas, ImgCol_co2);
-
-/** 1.2 MODIS products: LAI, Albedo, Emissivity  */
-function print_1th(imgcol) {
-    var img = ee.Image(imgcol.first());
-    print(img);
-}
-
-if (I_interp) {
-    var imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').smoothed
-        .map(function (img) { return img.multiply(0.1).copyProperties(img, img.propertyNames()); }); //scale factor 0.1
-    imgcol_lai = ee.ImageCollection(imgcol_lai.toList(2000));
-    // print(imgcol_lai);
-
-    imgcol_emiss = ee.ImageCollection(imgcol_emiss.toList(1000))
-        .map(function (img) {
-            var emiss = img.select(0).expression('b() * 0.002 + 0.49'); //.toFloat(); //.toUint8()
-            return img.select('qc').addBands(emiss);
-        }).select([1, 0], ['Emiss', 'qc']);
-
-    imgcol_albedo = ee.ImageCollection(imgcol_albedo.toList(1000))
-        .map(function (img) {
-            var albedo = img.select(0).multiply(0.001); //.toFloat();
-            return img.select(1).addBands(albedo);
-        }).select([1, 0], ['Albedo', 'qc']);//scale factor 0.001, no units;
-    // print('Interped');
-} else {
-    /** No Interpolation MODIS INPUTS */
-    imgcol_lai = ee.ImageCollection('MODIS/006/MCD15A3H').select('Lai')
-        .map(function (img) { return img.multiply(0.1).copyProperties(img, img.propertyNames()); }); //scale factor 0.1
-
-    imgcol_emiss = ee.ImageCollection('MODIS/006/MOD11A2')
-        .select(['Emis_31', 'Emis_32'])
-        .map(function (img) {
-            return img.reduce(ee.Reducer.mean()).multiply(0.002).add(0.49)
-                .copyProperties(img, ['system:time_start', 'system:id']);
-        }).select([0], ['Emiss']);
-
-    var Albedo_raw = ee.ImageCollection('MODIS/006/MCD43A3').select(['Albedo_WSA_shortwave'])
-        .map(pkg_trend.add_dn(true));
-    imgcol_albedo = pkg_trend.aggregate_prop(Albedo_raw, 'd8', 'mean')
-        .map(function (img) { return img.addBands(img.multiply(0.001)).select([1]); })
-        .select([0], ['Albedo']);
-    // print('No Interped');
-}
-// print_1th(imgcol_lai);
-// print_1th(imgcol_emiss);
-// print_1th(imgcol_albedo);
-
-/**
- * Prepare INPUT datset for PML_V2
- *
- * @param {[type]} begin_year [description]
- * @param {[type]} end_year   [description]
- */
-function PML_INPUTS_d8(begin_year, end_year) {
-    if (typeof end_year === 'undefined') { end_year = begin_year; }
-    begin_year = ee.Number(begin_year);
-    end_year = ee.Number(end_year);
-
-    var begin_yearStr = begin_year.format('%d'),
-        end_yearStr = end_year.format('%d');
-    var date_begin = ee.Date(ee.Algorithms.If(begin_year.eq(ee.Number(2002)),
-        begin_yearStr.cat("-07-01"), begin_yearStr.cat("-01-01"))),
-        date_end = ee.Date(end_yearStr.cat("-12-31"));
-    var filter_date = ee.Filter.date(date_begin, date_end);
-    // print(date_begin, date_end);
-
-    /** MODIS LAI, Albedo, Emiss */
-    // var miss_date = ee.Date('2003-12-19'); //replaced with 2003-12-23
-    // var lai_miss  = imgcol_lai.filterDate('2003-12-22', '2003-12-24')
-    //     .map(function(img){ return pkg_main.setImgProperties(img, miss_date); })
-    //     .sort("system:time_start");
-
-    /** 4-day to 8-day */
-    var LAI_d4 = imgcol_lai.filter(filter_date);//.merge(lai_miss);
-    LAI_d4 = LAI_d4.map(pkg_trend.add_dn(true, 8));
-    // print(imgcol_lai);
-
-    var LAI_d8 = pkg_trend.aggregate_prop(LAI_d4, 'dn', 'mean').select([0], ['LAI']);
-    // print(LAI_d4, LAI_d8, 'LAI_d8');
-
-    LAI_d8 = LAI_d8.map(function (img) {
-        return img.updateMask(img.gte(0)).unmask(0); //.mask(land_mask); // LAI[LAI < 0] <- 0
-    });
-
-    // LAI has missing images, need to fix in the future
-
-    var Albedo_d8 = imgcol_albedo.filter(filter_date);
-    var Emiss_d8 = imgcol_emiss.filter(filter_date);
-
-    var modis_input = pkg_join.SaveBest(Emiss_d8, LAI_d8);
-    modis_input = pkg_join.SaveBest(modis_input, Albedo_d8);
-
-    // print(modis_input);
-    if (I_interp) {
-        // add qc bands
-        modis_input = modis_input.map(function (img) {
-            var qc = img.expression('b("qc") + b("qc_1")*8').toUint8(); //qc, 0-2:emiss, 3-5:albedo
-            return img.select(['LAI', 'Emiss', 'Albedo']).addBands(qc);
-        });
-    }
-
-    var gldas_input = ImgCol_gldas.filter(filter_date);
-    if (meth_interp === 'bilinear' || meth_intterp === 'bicubic') {
-        gldas_input = gldas_input.map(function (img) {
-            return img.resample(meth_interp).copyProperties(img, img.propertyNames());
-        });
-    }
-
-    var pml_input = pkg_join.InnerJoin(modis_input, gldas_input).sort("system:time_start");
-    // Map.addLayer(pml_input, {}, 'pml_input');
-    // Map.addLayer(modis_input, {}, 'modis_input');
-    return ee.ImageCollection(pml_input);
-}
 
 /** PML GLOBAL PARAMETERS */
 var Gsc = 0.0820,  // solar constant in unit MJ m-2 min-1,
@@ -198,7 +47,7 @@ var kQ  = 0.4488,  // extinction coefficient
     Q50 = 30,      // the value of absorbed PAR when gs=gsx/2, W/m2
     D0  = 0.7;     // the value of VPD when stomtal conductance is reduced  kpa 
 
-/**P
+/**
  * PML_V2 (Penman-Monteith-Leuning) model
  *
  * sub functions:
@@ -230,9 +79,9 @@ function PML(year, is_PMLV2) {
 
     /** Initial parameters */
     if (is_PMLV2) {
-        D0 = img_param.get('D0');
-        kQ = img_param.get('kQ');
-        kA = img_param.get('kA');
+        D0 = img_param.select('D0');
+        kQ = img_param.select('kQ');
+        kA = img_param.select('kA');
         // for PML_v1 D0, kQ, kA are constant parameters.
     }
 
@@ -272,13 +121,13 @@ function PML(year, is_PMLV2) {
         var ea = img.expression('q * p / (0.622 + 0.378 * q)', { 'p': p, 'q': q });
 
         // saturation vapour pressure from Tair
-        var es_tmax = vapor_pressure(Tmax);
-        var es_tmin = vapor_pressure(Tmin);
-        var es_tavg = vapor_pressure(Tavg);
+        var es_tmax = pkg_PML.vapor_pressure(Tmax);
+        var es_tmin = pkg_PML.vapor_pressure(Tmin);
+        var es_tavg = pkg_PML.vapor_pressure(Tavg);
         var es = es_tmax.add(es_tmin).divide(2);
 
         var VPD = es.subtract(ea).max(0.001);
-
+        
         var rou_a = img.expression('3846 * Pa / (Tavg + 273.15)',
             { 'Pa': p, 'Tavg': Tavg });
         var gama = img.expression('Cp*Pa/(0.622*lambda)',
@@ -295,7 +144,7 @@ function PML(year, is_PMLV2) {
         var Rn = Rns.add(Rnl).max(0.0);    // to ensure Rn >= 0;
         var PAR = Rs.multiply(0.45).max(0); // could be used modis data to replace
         // units convert: http://www.egc.com/useful_info_lighting.php
-
+        
         var Gc, GPP;
         var fvpd_gc = VPD.expression('1/(1+b()/D0)', { D0: D0 });        // leuning
         // var fvpd = VPD.expression('exp(-D0 * pow(b(), 2))', {D0:D0}); // yongqiang, f_VPD = exp(-D0 * VPD.^2);
@@ -310,10 +159,10 @@ function PML(year, is_PMLV2) {
             /** G flux part */
             var fT2 = Tavg.expression('exp(0.031*(b()-25))/(1 +exp(0.115*(b()-41)))').min(1.0);
 
-            var P1 = img_param.expression("b('Am') * b('Alpha') * b('Thlta')").multiply(PAR_mol);
+            var P1 = img_param.expression("b('Am') * b('Alpha') * b('Thelta')").multiply(PAR_mol);
             var P2 = img_param.expression("b('Am') * b('Alpha')").multiply(PAR_mol);
-            var P3 = img_param.expression("b('Am') * b('Thlta')").multiply(Ca);
-            var P4 = img_param.expression("b('Alpha') * b('Thlta')").multiply(PAR_mol).multiply(Ca).divide(fT2);
+            var P3 = img_param.expression("b('Am') * b('Thelta')").multiply(Ca);
+            var P4 = img_param.expression("b('Alpha') * b('Thelta')").multiply(PAR_mol).multiply(Ca).divide(fT2);
 
             var Ags = P1.expression('Ca*P1/(P2*kQ + P4*kQ) * (kQ*LAI + log((P2+P3+P4)/(P2+P3*exp(kQ*LAI) + P4)))', //*fT2
                 { Ca: Ca, P1: P1, P2: P2, P3: P3, P4: P4, kQ: kQ, LAI: LAI, fT2: fT2 });  // umol cm-2 s-1
@@ -334,7 +183,7 @@ function PML(year, is_PMLV2) {
         Gc = Gc.max(1e-6);
         // known bug: bare, ice & snow, unc, all zero parameters will lead to p1, p2, p3, p4 = 0,
         //            GPP = 0/0(masked), and Ec = masked.
-
+        
         /** AERODYNAMIC CONDUCTANCE */
         var d = img_param.select('hc').multiply(0.64);
         var zom = img_param.select('hc').multiply(0.13);
@@ -354,7 +203,7 @@ function PML(year, is_PMLV2) {
             .max(0);
         var mask_water = land.expression('b() == 0 || b() == 15'); //water, snow&ice
         var ET_water = Eeq.add(Evp).updateMask(mask_water).rename('ET_water');
-
+        
         // // Convert MJ/m2/day into W/m2;
         // Rn  = Rn.divide(0.0864).max(0);
         // PAR = PAR.divide(0.0864).max(0);
@@ -400,10 +249,11 @@ function PML(year, is_PMLV2) {
 
         var fER = fveg.multiply(img_param.select('fER0'));
         var prcp_wet = LAI.expression('-log(1 - fER0) / fER0 * Sveg / fveg',
-            { fER0: fER0, fveg: fveg, Sveg: Sveg });
+            { fER0: img_param.select('fER0'), fveg: fveg, Sveg: Sveg });
         var Ei = LAI.expression('(P < Pwet) * fveg * P + (P >= Pwet) * ( fveg*Pwet + fER*(P - Pwet) )',
             { fveg: fveg, fER: fER, P: prcp, Pwet: prcp_wet });
         var Pi = prcp.subtract(Ei);
+
         // (P < Pwet) * fveg * P + (P >= Pwet) * ( fveg*Pwet + fER*(P - Pwet) )
         //    NA and infinite values should be replaced as zero. But GEE where and 
         //    updatemask are incompetent.
@@ -437,6 +287,8 @@ function PML(year, is_PMLV2) {
      */
     function PML_period(INPUTS) {
         var len = INPUTS.size();
+        // var img = INPUTS.first();
+        // var ans = PML_daily(img);
         /** 2. ImgsRaw: ['Eeq', 'Evp', 'Es_eq', 'Eca', 'Ecr', 'Ei', 'Pi'] */
         var PML_ImgsRaw = INPUTS.map(PML_daily).sort("system:time_start");
 
@@ -460,6 +312,8 @@ function PML(year, is_PMLV2) {
 
         // Map.addLayer(INPUTS, {}, 'INPUTS');
         // Map.addLayer(PML_ImgsRaw.select('Ec'), {}, 'Ec');
+        // print(INPUTS, 'INPUTS')
+        // print(PML_Imgs)
         // Map.addLayer(PML_Imgs, {}, 'PML_Imgs');
         // Map.addLayer(ImgCol_land, {}, 'land')
         return PML_Imgs;
@@ -481,7 +335,7 @@ var options = {
     type: 'asset',
     crs: 'SR-ORG:6974', //projects/pml_evapotranspiration
     crsTransform: prj.crsTransform
-}
+};
 
 if (exec) {
     var is_PMLV2 = true; //If false, PML_V1 will be used!
@@ -505,7 +359,8 @@ if (exec) {
     var imgcol_PML, img_year;
     var begin_date, ydays;
 
-    var years = ee.List.sequence(2003, 2018);
+    var years =pkg_PML.seq(2003, 2017);
+    // print(years)
     var vis_et = { min: 100, max: 1600, palette: pkg_vis.colors.RdYlBu[11] },
         vis_gpp = { min: 100, max: 3500, palette: pkg_vis.colors.RdYlGn[11] };
     var vis_slp = { min: -20, max: 20, palette: ["ff0d01", "fafff5", "2aff03"] };
@@ -573,15 +428,16 @@ if (exec) {
 
         for (var year = year_begin; year <= year_end; year++) {
             begin_date = ee.Date.fromYMD(year, 1, 1);
-            task = begin_date.format('YYYY-MM-dd').getInfo();
-
+            task = year.toString().concat('-01-01');
+        
             ydays = begin_date.advance(1, 'year').difference(begin_date, 'day');
 
             imgcol_PML = PML(year, is_PMLV2);
-            img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
-                .set('system:time_start', begin_date.millis())
-                .set('system:id', task);
-            print(imgcol_PML)
+            // img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
+            //     .set('system:time_start', begin_date.millis())
+            //     .set('system:id', task);
+            // print(task, imgcol_PML)
+            Map.addLayer(imgcol_PML, {}, 'imcol_PML');
             // pkg_export.ExportImg(img_year, task, range, cellsize, type, folder_yearly, crs, crsTransform);
             // pkg_export.ExportImgCol(imgcol_PML, null, range, cellsize, type, folder, crs, crsTransform);
         }
@@ -591,27 +447,3 @@ if (exec) {
 exports = {
     PML: PML
 };
-
-// function Export() {
-//     /** Export ImgCol into asset */
-//     var save = true;
-//     if (save) {
-//         var dates = ee.List(INPUTS.aggregate_array('system:time_start'))
-//             .map(function (date) { return ee.Date(date).format('yyyy-MM-dd'); }); //.getInfo(); //DATES of INPUT
-
-//         // print('hello', PML_Imgs, dates);
-//         var img = ee.Image(PML_Imgs.first());
-//         // img = img.select(ee.List.sequence(0, 4)); //rm qc band
-//         // var crs_trans = img.select('qc').projection().transform();
-//         // img = img.reproject(crs, crs_trans);
-//         // print(img, crs_trans);
-//         // Map.addLayer(img);
-//         // Map.addLayer(PML_Imgs, {}, 'PML_Imgs')
-//         // print(PML_Imgs, dates);
-//         // export_image(img, '2002-07-05_v6');
-//         pkg_export.ExportImgCol(PML_Imgs, dates, options);
-//         // pkg_export.ExportImg(img, range, '2002-07-05_v4', scale, drive, folder, crs)
-//     } else {
-//         print('PML_Imgs', PML_Imgs);
-//     }
-// }
