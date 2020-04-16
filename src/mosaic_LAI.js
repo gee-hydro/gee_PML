@@ -2,7 +2,7 @@
 var imgcol_LAI_2018 = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit2018"),
     imgcol_lai_4d = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit_4d");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
-// var imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').imgcol_LAI;
+// var imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').smoothed;
 
 var pkg_main = require('users/kongdd/public:pkg_main.js');
 
