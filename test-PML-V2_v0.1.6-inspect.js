@@ -23,7 +23,8 @@ var pkg_main = require('users/kongdd/public:pkg_main.js');
 var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
 var pkg_export = require('users/kongdd/public:pkg_export.js');
 var pkg_vis = require('users/kongdd/public:pkg_vis.js');
-var pkg_PML = require('users/kongdd/gee_PML:pkg_PML.js');
+var pkg_PML = require('users/kongdd/gee_PML:pkg_PML_param.js');
+var pkg_forcing = require('users/kongdd/gee_PML:pkg_PML_forcing.js');
 // var points     = require('users/kongdd/public:data/flux_points.js').points;
 
 var prj = pkg_export.getProj(imgcol_land);
@@ -87,10 +88,8 @@ function PML(year, is_PMLV2) {
 
     /**
      * Calculate daily PML GPP and ET using GLDAS and MODIS inputs.
-     * 
      * @param  {Image} img GLDAS meteorological forcing data and MODIS remote sensing data
      *    with bands: ['LAI', 'Emiss', 'Albedo', 'Pa', 'Tmax', 'Tmin', 'Tavg', 'Prcp', 'Rln', 'Rs', 'U2']
-     * 
      * @return {Image} PML_ET with bands of ['ET_water', 'Es_eq', 'Ec', 'Ei', 'Pi']; 
      *                 If v2 = true, GPP also will be returned.
      */
@@ -324,7 +323,6 @@ function PML(year, is_PMLV2) {
     // Map.addLayer(INPUTS, {}, 'INPUT');
 
     var PML_Imgs = PML_period(INPUTS);
-    // Export();
     return PML_Imgs;
 }
 
