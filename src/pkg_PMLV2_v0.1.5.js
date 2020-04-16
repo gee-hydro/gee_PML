@@ -117,7 +117,7 @@ function init_dataset() {
         imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').smoothed
             .map(function (img) { return img.multiply(0.1).copyProperties(img, img.propertyNames()); }); //scale factor 0.1
         imgcol_lai = ee.ImageCollection(imgcol_lai.toList(2000));
-        print(imgcol_lai);
+        // print(imgcol_lai);
 
         imgcol_emiss = ee.ImageCollection(imgcol_emiss.toList(1000))
             .map(function (img) {
@@ -952,7 +952,7 @@ if (__main__) {
     };
     var imgcol_new, imgcol_org;
     // dynamic
-    imgcol_new = pkg_PML.PML_main(opt, true);
+    // imgcol_new = pkg_PML.PML_main(opt, true);
     
     // static
     opt.is_dynamic_lc = false;
