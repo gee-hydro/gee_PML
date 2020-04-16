@@ -1,5 +1,5 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165830543]);
+var imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 
 /**
@@ -27,7 +27,9 @@ var pkg_PML = require('users/kongdd/gee_PML:pkg_PML_param.js');
 var pkg_forcing = require('users/kongdd/gee_PML:pkg_PML_forcing.js');
 // var points     = require('users/kongdd/public:data/flux_points.js').points;
 
+// pkg_forcing.init_dataset();
 var prj = pkg_export.getProj(imgcol_land);
+var I_interp = true;
 
 /** PML GLOBAL PARAMETERS */
 var Gsc = 0.0820,  // solar constant in unit MJ m-2 min-1,
@@ -318,7 +320,8 @@ function PML(year, is_PMLV2) {
         return PML_Imgs;
     }
 
-    var INPUTS = PML_INPUTS_d8(year);
+    var INPUTS = pkg_forcing.PML_INPUTS_d8(year);
+    // print()
     // print(INPUTS, 'INPUTS');
     // Map.addLayer(INPUTS, {}, 'INPUT');
 
@@ -366,7 +369,7 @@ if (exec) {
     var lg_gpp = pkg_vis.grad_legend(vis_gpp, 'GPP', false);
     var lg_slp = pkg_vis.grad_legend(vis_slp, 'Trend (gC m-2 y-2)', false); //gC m-2 y-2, kPa y-1
 
-    pkg_vis.add_lgds([lg_gpp, lg_slp]);
+    // pkg_vis.add_lgds([lg_gpp, lg_slp]);
 
     if (debug) {
         /** 1. Check the output of PML_V2 **/

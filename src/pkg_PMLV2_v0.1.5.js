@@ -545,7 +545,7 @@ function PML(year, is_PMLV2) {
     // var year_land = ee.Algorithms.If(year.gt(year_max), year_max,
     //     ee.Algorithms.If(year.lt(year_min), year_min, year));
 
-    if (options.is_dynamic_lc) year_land = 2003; // dynamic landcover
+    if (!options.is_dynamic_lc) year_land = 2003; // dynamic landcover
     var filter_date_land = ee.Filter.calendarRange(year_land, year_land, 'year');
     var land = ee.Image(dataset.ImgCol_land.filter(filter_date_land).first()); //land_raw was MODIS/051/MCD12Q1
 

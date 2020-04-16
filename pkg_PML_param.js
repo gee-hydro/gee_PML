@@ -145,13 +145,17 @@ function propertyByLand_v2(landcover, list) {
     return ee.ImageCollection(lands).sum();
 }
 
-pkg_PML.init_param_year = function(year, is_PMLV2) {
+pkg_PML.init_param_year = function(year, is_PMLV2, options) {
+    options = options || {};
     if (is_PMLV2 === undefined) is_PMLV2 = true;
+    if (options.is_dynamic_lc === undefined) options.is_dynamic_lc = true;
     
     var year_land = year;
     if (year >= 2018) year_land = 2018;
     if (year <= 2001) year_land = 2001;
-
+    
+    if (!options.is_dynamic_lc) year_land = 2003; // dynamic landcover
+    
     var filter_date_land = ee.Filter.calendarRange(year_land, year_land, 'year');
     var land = ee.Image(pkg_PML.imgcol_land.filter(filter_date_land).first());
     /** remove water, snow and ice, and unclassified land cover using updateMask */
@@ -196,6 +200,7 @@ pkg_PML.init_param_year = function(year, is_PMLV2) {
         ans = ans.addBands(ee.Image([kQ, kA, Q50, D0]).rename(['kQ', 'kA', 'Q50', 'D0']));
     }
     
+    // print(land)
     var date = ee.Date.fromYMD(year, 1, 1);
     return ans
         .set('system:time_start', date.millis())
@@ -203,13 +208,14 @@ pkg_PML.init_param_year = function(year, is_PMLV2) {
         .set('Year', ee.Number(year).format());
 };
 
-pkg_PML.init_param_years = function(is_PMLV2){
+pkg_PML.init_param_years = function(is_PMLV2, options){
     if (is_PMLV2 === undefined) is_PMLV2 = true;
     var years = pkg_PML.seq(2000, 2019);
-    var imgcol_param = years.map(function(year) {return pkg_PML.init_param_year(year, is_PMLV2)});
+    var imgcol_param = years.map(function(year) {return pkg_PML.init_param_year(year, is_PMLV2, options)});
     imgcol_param = ee.ImageCollection(imgcol_param);
     // Map.addLayer(imgcol_param, {}, 'imgcol_param');
-    print(imgcol_param);
+    if (debug) print(imgcol_param);
+    return imgcol_param;
 };
 
 /** Vapor Pressure in kPa with temperature in degC */
@@ -219,7 +225,8 @@ pkg_PML.vapor_pressure = function(t) {
 
 exports = pkg_PML;
 
-var debug;// = true; //false;
+var debug;
+// var debug= true; //false;
 if (debug) {
-    pkg_PML.init_param_years(false);  
+    pkg_PML.init_param_years(false, {is_dynamic_lc: true});  
 }
