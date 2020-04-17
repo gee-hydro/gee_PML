@@ -942,7 +942,7 @@ var __main__ = true;
 if (__main__) {
     // default is dynamic
     var opt = {
-        year_begin: 2003,
+        year_begin: 2011,
         year_end  : 2017,
         folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v016_dynamic", // _staticLC2003
         // folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_static", // _staticLC2003
@@ -952,12 +952,12 @@ if (__main__) {
     };
     var imgcol_new, imgcol_org;
     // dynamic
-    // imgcol_new = pkg_PML.PML_main(opt, true);
+    imgcol_new = pkg_PML.PML_main(opt, true);
     
     // static
     opt.is_dynamic_lc = false;
     opt.folder = "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v016_static";
-    imgcol_org = pkg_PML.PML_main(opt, true);
+    // imgcol_org = pkg_PML.PML_main(opt, true);
     
     var is_compare = false;
     if (is_compare) {
