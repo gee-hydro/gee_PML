@@ -1,12 +1,12 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var fluxpnts = ee.FeatureCollection("users/kongdd/shp/flux-212"),
     test_pnt = /* color: #d63000 */ee.Geometry.Point([140.00015258789062, -28.07622128384924]),
-    ImgCol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_v21_8day"),
     imgcol_albedo = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/Albedo_interp_8d_v2"),
     imgcol_emiss = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d"),
     imgcol_lai_4d = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit_4d"),
-    co2 = ee.FeatureCollection("projects/pml_evapotranspiration/PML_INPUTS/co2_mm_gl_2002-2017_8day"),
-    imgcol_gldas_raw = ee.ImageCollection("NASA/GLDAS/V021/NOAH/G025/T3H");
+    imgcol_gldas_raw = ee.ImageCollection("NASA/GLDAS/V021/NOAH/G025/T3H"),
+    co2 = ee.FeatureCollection("projects/pml_evapotranspiration/PML_INPUTS/co2_mm_gl_2002-2019_8day"),
+    ImgCol_gldas = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/GLDAS_V21_8day_V2");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /**
  * Prepare inputs for 8-day PML, e.g. MODIS LAI, Albedo, Emissivity and GLDAS 
@@ -110,11 +110,12 @@ function gldas_inputs_d8(date_begin, date_end, dailyImg_iters){
 ///////////////////////////////////////////////////////////////////////////////
 var date2str = function(date) { return ee.Date(date).format('yyyy-MM-dd'); };
 
+// print(ImgCol_gldas.size(), ImgCol_gldas.filterDate('2019-01-01', '2020-01-01'))
 var IS_RUN = true;
 if (IS_RUN){
     // aggregate 3hourly gldas into 8day and save into assets
     var year_begin = 2019,
-        year_end   = 2019; 
+        year_end   = 2020; 
     
     var date_begin = ee.Date(year_begin.toString().concat("-01-01")),
         date_end   = ee.Date(year_end.toString().concat("-12-31"));
@@ -142,7 +143,7 @@ if (IS_RUN){
     // var pml_input = PML_INPUTS_d8(date_begin, date_end, dailyImg_iters);
     // print(gldas_input); //gldas_input, pml_input
 
-    var pkg_export = require('users/kongdd/public:pkg_export2.js');
+    var pkg_export = require('users/kongdd/public:pkg_export.js');
     var options = {
         type     : "asset",
         range    : [-180, -60, 180, 90], 

@@ -220,8 +220,13 @@ var debug;// = true; //false;
 // var debug = true;
 if (debug) {
     var year = 2003;
-    var INPUTS = pkg_forcing.PML_INPUTS_d8(year, 2005, {is_dynamic_lc: false});
+    var imgcol = pkg_forcing.PML_INPUTS_d8(year, 2004, {is_dynamic_lc: true});
     // not that PML_INPUTS_d8 has the parameter `is_dynamic_lc`
     // var INPUTS = pkg_forcing.PML_INPUTS_d8(year, 2005);
-    print(INPUTS);
+    var bands = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    
+    imgcol = imgcol.map(function(img) {
+      return img.toFloat();
+    });
+    print(imgcol.select(bands));
 }

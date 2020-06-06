@@ -127,17 +127,19 @@ if (DEBUG) {
     // var imgcol_out  = imgcol_his.filter(filter_date2).map(zip_emiss).select([1, 0]);
     // var folder = 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/Emiss_interp_8d'; 
 
-    /** EXPORT DATA ------------------------------------------------------------- */
-    var range      = [-180, -60, 180, 90], // keep consistent with modis data range
-        range_high = [-180, 60, 180, 90],  //
-        // cellsize   = 1 / 240,
-        type       = 'asset',
-        crs        = 'SR-ORG:6974';
-        // task = 'whit-4y';
+    /** EXPORT DATA ------------------------------------------------------------- */    
+    // task = 'whit-4y';
     
-    pkg_export.ExportImgCol(imgcol_out, dateList, range, cellsize, type, folder, 
-        crs, prj.crsTransform);
-    
+    var options = {
+        range : [-180, -60, 180, 90], // keep consistent with modis data range
+        type  : 'asset', 
+        crs   : 'SR-ORG:6974', 
+        folder: folder, 
+        cellsize: cellsize,
+        crsTransform: prj.crsTransform
+    };
+
+    pkg_export.ExportImgCol(imgcol_out, dateList, options);
     // print(imgcol_out.limit(2));
     // print(dateList);
     // pkg_export.ExportImgCol(emiss_interp, dateList, range, scale, drive, folder, crs);
