@@ -65,7 +65,7 @@ var dateList = ee.List(Emiss_d8.filter(filter_date2).aggregate_array('system:tim
 
 /** common parameters ------------------------------------------------------- */
 var type = 'albedo';
-var type = 'emiss';
+// var type = 'emiss';
 
 var imgcol_all, cellsize, folder, zipfun, prj;
 if (type === 'albedo'){
