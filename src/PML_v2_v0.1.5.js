@@ -7,8 +7,11 @@ var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165
     imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
     co2 = ee.FeatureCollection("projects/pml_evapotranspiration/PML_INPUTS/co2_mm_gl_2002-2019_8day");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
-
 /**
+ * Copyright (c) 2019 Dongdong Kong. All rights reserved.
+ * This work is licensed under the terms of the MIT license.  
+ * For a copy, see <https://opensource.org/licenses/MIT>.
+ * 
  * PML_V2 (Penman-Monteith-Leuning) model 
  *
  * @usage:

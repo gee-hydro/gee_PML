@@ -11,8 +11,12 @@ var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165
 var pkg_PML = {};
 // var pkg_PML = require('users/kongdd/gee_PML:src/pkg_PMLV2_v0.1.5.js');
 /**
+ * Copyright (c) 2019 Dongdong Kong. All rights reserved.
+ * This work is licensed under the terms of the MIT license.  
+ * For a copy, see <https://opensource.org/licenses/MIT>.
+ * 
  * PML_V2 (Penman-Monteith-Leuning) model 
- *
+ * 
  * @usage:
  * var pkg_PML = require('users/kongdd/gee_PML:src/pkg_PMLV2_v0.1.5.js');
  *
@@ -215,14 +219,9 @@ function aggregate_yearly(imgcol, band, scale_factor) {
     return imgcol_annual;
 }
 function yearly_anomaly(imgcol, band, scale_factor, is_yearly) {
-    if (is_yearly === undefined) {
-        is_yearly = false;
-    }
-
-    if (!is_yearly) {
-        imgcol = aggregate_yearly(imgcol);
-    }
-
+    if (is_yearly === undefined) is_yearly = false;
+    if (!is_yearly) imgcol = aggregate_yearly(imgcol);
+    
     var img_2003 = imgcol.first();
     var imgcol_diff = imgcol
         .map(function (img) { return img.subtract(img_2003).copyProperties(img, ["system:time_start"]); });
@@ -312,7 +311,6 @@ pkg_PML.fill_options = function(opt, verbose){
 };
 
 /** 2. ------------------------------------------------------------------- */
-
 /**
  * Prepare INPUT datset for PML_V2
  *

@@ -3,15 +3,62 @@ var imgcol_combined_LAI = ee.ImageCollection("MODIS/006/MCD15A3H"),
     imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /** LOAD REQUIRED PACKAGES */
-var pkg_mov = require('users/kongdd/public:Math/pkg_movmean.js'); //movmean
-var pkg_join = require('users/kongdd/public:pkg_join.js');
-var pkg_main = require('users/kongdd/public:pkg_main.js');
-var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
+var pkg_main   = require('users/kongdd/public:pkg_main.js');
+var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');
 var pkg_export = require('users/kongdd/public:pkg_export.js');
-var pkg_vis = require('users/kongdd/public:pkg_vis.js');
-var pkg_whit     = require('users/kongdd/public:Math/pkg_whit.js');
+var pkg_whit   = require('users/kongdd/public:Math/pkg_whit.js');
+// var pkg_mov    = require('users/kongdd/public:Math/pkg_movmean.js'); //movmean
+// var pkg_join   = require('users/kongdd/public:pkg_join.js');
+// var pkg_vis = require('users/kongdd/public:pkg_vis.js');
 
 /** GLOBAL FUNCTIONS -------------------------------------------------------- */
+/** 
+ * Initial parameter lambda for whittaker
+ * 
+ * update 20200628, the uncertainty mainly roots in `init_lambda`. 
+ *
+ * @note
+ * This function is now validated with Terra LAI. 
+ * lambda has been constrained in the range of [1e-2, 1e3]
+ * 
+ * Be caution about coef, when used for other time-scale. The coefs
+ * should be also updated.
+ * 
+ * @param {ee.ImageCollection} imgcol The input ee.ImageCollection should have 
+ * been processed with quality control.
+ */
+pkg_whit.init_lambda = function (imgcol, mask_vi) {
+    /** Define reducer 
+     *  See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Reduce
+     */
+    var combine = function (reducer, prev) { return reducer.combine(prev, null, true); };
+    var reducers = [ee.Reducer.mean(), ee.Reducer.stdDev(), ee.Reducer.skew(), ee.Reducer.kurtosis()];
+    var reducer = reducers.slice(1).reduce(combine, reducers[0]);
+
+    var img_coef = imgcol.reduce(reducer).select([0, 1, 2, 3], ['mean', 'sd', 'skewness', 'kurtosis']);
+
+    // Lambda of 4y or 1y coefs has no significant difference.
+    // update 20200628
+    var formula = "1.77365505 -0.00*b('mean')/b('sd') + 0.43062881*b('mean') - 0.34192178*b('sd') - 0.30107590*b('skewness') + 0.03221195*b('kurtosis')";   // chunk02_Extend
+    // var formula = "0.9809 -0.00*b('mean')/b('sd') +0.0604*b('kurtosis') +0.7247*b('mean') -2.6752*b('sd') -0.3854*b('skewness')";   // Kong D., et al., 2019;
+    // var formula = "1.0199 -0.0074*b('mean')/b('sd') +0.0392*b('kurtosis') +0.7966*b('mean') -3.1399*b('sd') -0.3327*b('skewness')"; // 4y 
+
+    // var formula = '0.979745736 + 0.725033847*b("mean") -2.671821865*b("sd") - 0*b("mean")/b("sd") - 0.384637294*b("skewness") + 0.060301697*b("kurtosis")';
+    // var formula = "0.8055 -0.0093*b('mean')/b('sd') -0.0092*b('kurtosis') +1.4210*b('mean') -3.8267*b('sd') -0.1206*b('skewness')";
+    // print("new lambda formula ...");
+    // Map.addLayer(img_coef, {}, 'img_coef');
+    var lambda = img_coef.expression(formula);
+    lambda = ee.Image.constant(10.0).pow(lambda);
+    if (mask_vi) {
+        lambda = lambda.where(mask_vi.not(), 2);   // for no vegetation regions set lambda = 2    
+    }
+    var lambda_max = 5e2;
+    var lambda_min = 1e-2;
+    lambda = lambda.where(lambda.gt(lambda_max), lambda_max)
+        .where(lambda.lt(lambda_min), lambda_min);             // constain lambda range
+    return lambda;
+};
+
 var date2str = function (x) { return ee.Date(x).format('YYYY_MM_dd'); };
 /** ------------------------------------------------------------------------- */
 var options = {
@@ -126,8 +173,8 @@ function whit_batch(imgcol_full, year, dt){
     // Only center part remained
     var I_beg = years.indexOf(year);
     var I_end = years.lastIndexOfSubList([year_end2]).add(1);
-    print(year, year_begin, year_end, nyear);
-    print(years, I_beg, I_end);
+    // print(year, year_begin, year_end, nyear);
+    // print(years, I_beg, I_end);
     
     // dates convert to band names
     var matBands = dates.slice(I_beg, I_end)
@@ -149,7 +196,7 @@ function whit_batch(imgcol_full, year, dt){
     lambda = pkg_whit.init_lambda(imgcol_temp); // first band
     // lambda = ee.Image.constant(2);
     // options.wFUN = wSELF;
-    task = 'wWH_' + (year) + "_" + years.get(I_end.subtract(1)).getInfo();
+    task = 'wWH_' + year + "_" + year_end2;
     print(task);
    
     // 3. whittaker main entries
@@ -168,7 +215,7 @@ function whit_batch(imgcol_full, year, dt){
     /** export global data */
     // 4.2 export global data
     if (isExportGlobal){
-        pkg_export.ExportImg(img_out, task, options);
+        pkg_export.ExportImg(img_out, task, options_export);
     }
     
     return {
@@ -207,53 +254,6 @@ function qc_LAI(img) {
         .rename(['Lai', 'w', 'qc_scf', 'qc_snow', 'qc_aerosol', 'qc_cirrus', 'qc_cloud', 'qc_shadow'])
         .copyProperties(img, img.propertyNames());
 }
-
-/** 
- * Initial parameter lambda for whittaker
- * 
- * update 20200628, the uncertainty mainly roots in `init_lambda`. 
- *
- * @note
- * This function is now validated with Terra LAI. 
- * lambda has been constrained in the range of [1e-2, 1e3]
- * 
- * Be caution about coef, when used for other time-scale. The coefs
- * should be also updated.
- * 
- * @param {ee.ImageCollection} imgcol The input ee.ImageCollection should have 
- * been processed with quality control.
- */
-pkg_whit.init_lambda_LAI = function (imgcol, mask_vi) {
-    /** Define reducer 
-     *  See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Reduce
-     */
-    var combine = function (reducer, prev) { return reducer.combine(prev, null, true); };
-    var reducers = [ee.Reducer.mean(), ee.Reducer.stdDev(), ee.Reducer.skew(), ee.Reducer.kurtosis()];
-    var reducer = reducers.slice(1).reduce(combine, reducers[0]);
-
-    var img_coef = imgcol.reduce(reducer).select([0, 1, 2, 3], ['mean', 'sd', 'skewness', 'kurtosis']);
-
-    // Lambda of 4y or 1y coefs has no significant difference.
-    // update 20200628
-    var formula = "1.77365505 -0.00*b('mean')/b('sd') + 0.43062881*b('mean') - 0.34192178*b('sd') - 0.30107590*b('skewness') + 0.03221195*b('kurtosis')";   // chunk02_Extend
-    // var formula = "0.9809 -0.00*b('mean')/b('sd') +0.0604*b('kurtosis') +0.7247*b('mean') -2.6752*b('sd') -0.3854*b('skewness')";   // Kong D., et al., 2019;
-    // var formula = "1.0199 -0.0074*b('mean')/b('sd') +0.0392*b('kurtosis') +0.7966*b('mean') -3.1399*b('sd') -0.3327*b('skewness')"; // 4y 
-
-    // var formula = '0.979745736 + 0.725033847*b("mean") -2.671821865*b("sd") - 0*b("mean")/b("sd") - 0.384637294*b("skewness") + 0.060301697*b("kurtosis")';
-    // var formula = "0.8055 -0.0093*b('mean')/b('sd') -0.0092*b('kurtosis') +1.4210*b('mean') -3.8267*b('sd') -0.1206*b('skewness')";
-    // print("new lambda formula ...");
-    // Map.addLayer(img_coef, {}, 'img_coef');
-    var lambda = img_coef.expression(formula);
-    lambda = ee.Image.constant(10.0).pow(lambda);
-    if (mask_vi) {
-        lambda = lambda.where(mask_vi.not(), 2);   // for no vegetation regions set lambda = 2    
-    }
-    var lambda_max = 5e2;
-    var lambda_min = 1e-2;
-    lambda = lambda.where(lambda.gt(lambda_max), lambda_max)
-        .where(lambda.lt(lambda_min), lambda_min);             // constain lambda range
-    return lambda;
-};
 
 /**
  * Get VI boundaries
