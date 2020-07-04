@@ -1,12 +1,13 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var imgcol_combined_LAI = ee.ImageCollection("MODIS/006/MCD15A3H"),
-    imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1");
+    imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
+    imgcol_LAI = ee.ImageCollection("MODIS/006/MOD15A2H");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /** LOAD REQUIRED PACKAGES */
-var pkg_main   = require('users/kongdd/public:pkg_main.js');
-var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');
+var pkg_main = require('users/kongdd/public:pkg_main.js');
+var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
 var pkg_export = require('users/kongdd/public:pkg_export.js');
-var pkg_whit   = require('users/kongdd/public:Math/pkg_whit.js');
+var pkg_whit = require('users/kongdd/public:Math/pkg_whit.js');
 // var pkg_mov    = require('users/kongdd/public:Math/pkg_movmean.js'); //movmean
 // var pkg_join   = require('users/kongdd/public:pkg_join.js');
 // var pkg_vis = require('users/kongdd/public:pkg_vis.js');
@@ -62,64 +63,73 @@ pkg_whit.init_lambda = function (imgcol, mask_vi) {
 var date2str = function (x) { return ee.Date(x).format('YYYY_MM_dd'); };
 /** ------------------------------------------------------------------------- */
 var options = {
-    order        : 2,    // difference order
-    wFUN         : pkg_whit.wBisquare_array, // weigths updating function
-    iters        : 3,    // Whittaker iterations
+    order: 2,    // difference order
+    wFUN: pkg_whit.wBisquare_array, // weigths updating function
+    iters: 2,    // Whittaker iterations
     min_ValidPerc: 0.3,  // pixel valid percentage less then 30%, is not smoothed.
-    min_A        : 0.02, // Amplitude A = ylu_max - ylu_min, points are masked if 
-                         // A < min_A.
-    missing      : -0.05, // Missing value in band_sm are set to missing.
-    band_sm      : 'Lai', // The band to smooth
+    min_A: 0.02, // Amplitude A = ylu_max - ylu_min, points are masked if 
+    // A < min_A.
+    missing: -0.05, // Missing value in band_sm are set to missing.
+    band_sm: 'Lai', // The band to smooth
     // band_qc      : 'SummaryQA', // The quality variable for band_sm
     // matrixSolve = 1;   // whittaker, matrix solve option:
     // 1:matrixSolve, 2:matrixCholeskyDecomposition, 3:matrixPseudoInverse 
 };
 
 var prj = pkg_export.getProj(imgcol_land);
-print(prj);
+// print(prj);
 
 var options_export = {
-    range  : [-180, -60, 180, 89], // keep consistent with modis data range
-    type   : 'asset', 
-    crs    : 'SR-ORG:6974', 
-    folder : 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit2019', 
-    cellsize : 1/240,
-    crsTransform : prj.crsTransform
+    range: [-180, -60, 180, 89], // keep consistent with modis data range
+    type: 'asset',
+    crs: 'SR-ORG:6974',
+    folder: 'projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit2019',
+    cellsize: 1 / 240,
+    crsTransform: prj.crsTransform
 };
 // print(options);
 // var options;
 
 /** 1.2 Parameters for Export scale or type */
 var isExportGlobal = true,   // whether export global data?
-    isExportPoint  = false,  // whether export points result at fluxnet and phenocam?
+    isExportPoint = false,  // whether export points result at fluxnet and phenocam?
     isExportLambda = false;  // whether export whittaker lambda
 var IsShow;                  // whether to show point visualization app
 // IsShow = true;
-if (IsShow){
+if (IsShow) {
     isExportGlobal = isExportPoint = isExportLambda = false;  // if show app, not export
 }
 
 // 2020-06-21; LAI is only week delay
 // print(imgcol_combined_LAI.filterDate('2020-01-01', '2020-12-31'));
-var imgcol_lai = ee.ImageCollection('MODIS/006/MCD15A3H')
-    .filterDate('2000-01-01', '2019-12-31')
-    .map(qc_LAI).select([0, 1]);
+var is_combined = false;
+var imgcol_d8;
+if (is_combined) {
+    var imgcol_lai = ee.ImageCollection('MODIS/006/MCD15A3H')
+        .filterDate('2000-01-01', '2019-12-31')
+        .map(qc_LAI).select([0, 1]);
     // .select('Lai')
     // .map(function (img) { return img.multiply(0.1).copyProperties(img, img.propertyNames()); }); //scale factor 0.1
-imgcol_lai = imgcol_lai.map(pkg_trend.add_dn(true, 8));
-// print(imgcol_lai.limit(2))
+    imgcol_lai = imgcol_lai.map(pkg_trend.add_dn(true, 8));
 
-// aggregate from 4-day into 8-day
-var imgcol_d8 = pkg_trend.aggregate_prop(imgcol_lai, 'dn', 'mean'); //.select([0], ['LAI']);
-imgcol_d8 = imgcol_d8.map(function (img) {
+    var imgcol_d8 = pkg_trend.aggregate_prop(imgcol_lai, 'dn', 'mean'); //.select([0], ['LAI']);
+    imgcol_d8 = imgcol_d8.map(function (img) {
         var datestr = img.get('dn');
         var date = pkg_trend.YearDn_date(datestr);
         return img.updateMask(img.gte(0)).unmask(0)
             .set('system:time_start', date.millis()) //.mask(land_mask); // LAI[LAI < 0] <- 0
             .set('date', date.format('YYYY-MM-dd'));
     });
+    print(imgcol_d8.limit(3));
+} else {
+    imgcol_d8 = imgcol_LAI.select(['Lai_500m', 'FparLai_QC', 'FparExtra_QC'], ['Lai', 'FparLai_QC', 'FparExtra_QC'])
+        .filterDate('2000-01-01', '2019-12-31')
+        .map(qc_LAI).select([0, 1]);
+}
 print(imgcol_d8.limit(3));
+// print(imgcol_lai.limit(2))
 
+// aggregate from 4-day into 8-day
 // only smooth the period of 20180101-20191231
 var year = 2018;
 var imgcol_full = imgcol_d8;
@@ -130,7 +140,7 @@ print(ylu_full);
 whit_batch(imgcol_full, year);
 
 //////////////////////// MAIN FUNCTIONS ///////////////////////////////////////
-function whit_batch(imgcol_full, year, dt){
+function whit_batch(imgcol_full, year, dt) {
     dt = dt || 2;
     var year_begin, year_end;
     // Combine previous and subsequent one year images, to make sure 
@@ -146,19 +156,19 @@ function whit_batch(imgcol_full, year, dt){
     // 1y can better cope with land cover changes.
     var YEAR_MAX = 2019;
     year_begin = year - 1;
-    year_end   = year + dt; 
+    year_end = year + dt;
     var year_end2 = year_end - 1;
-    
-    if (year_end >= YEAR_MAX){
-        year_end  = YEAR_MAX;
-        year_end2 = YEAR_MAX; 
+
+    if (year_end >= YEAR_MAX) {
+        year_end = YEAR_MAX;
+        year_end2 = YEAR_MAX;
         // make sure the last task also is dt+2 year
         year_begin = YEAR_MAX - dt - 1;
     }
-    
+
     // if (2018 - year_end < dt) year_end = 2018; // combine last few years together
     var nyear = year_end - year_begin;
-    
+
     // 1. The imgcol used to calculating lambda should be equal to the imgcol 
     // used for smoothing;
     // 2. The imgcol used to calculating lambda should be complete years. If 
@@ -168,18 +178,18 @@ function whit_batch(imgcol_full, year, dt){
     var imgcol = imgcol_full.filter(filterDate);
 
     var dates = ee.List(imgcol.aggregate_array('system:time_start'));
-    var years = dates.map(function(x){ return ee.Date(x).get("year"); });
-    
+    var years = dates.map(function (x) { return ee.Date(x).get("year"); });
+
     // Only center part remained
     var I_beg = years.indexOf(year);
     var I_end = years.lastIndexOfSubList([year_end2]).add(1);
     // print(year, year_begin, year_end, nyear);
     // print(years, I_beg, I_end);
-    
+
     // dates convert to band names
     var matBands = dates.slice(I_beg, I_end)
-        .map(function(x) { return ee.String('b').cat(ee.Date(x).format('YYYY_MM_dd')); });
-  
+        .map(function (x) { return ee.String('b').cat(ee.Date(x).format('YYYY_MM_dd')); });
+
     var ylu, lambda, task;
     /** subroute for Whittaker algorithm */
     // 1. boundaries
@@ -187,23 +197,23 @@ function whit_batch(imgcol_full, year, dt){
     // ylu = pkg_whit.merge_ylu(ylu_full, ylu);
     ylu = ylu_full;
     // ylu = ylu.clip(bounds); // update 2018-07-28
-    
+
     // 2. lambda (Whittaker lambda)
     // filter again to exclude 2018 incomplete date, fixed 2018-07-16
     // var imgcol_temp = imgcol.select(0).filterDate('2000-01-01', '2019-12-31');
-    var imgcol_temp = pkg_whit.check_ylu(imgcol.select(0), ylu);
-    /** Export subroute */
-    lambda = pkg_whit.init_lambda(imgcol_temp); // first band
+    // var imgcol_temp = pkg_whit.check_ylu(imgcol.select(0), ylu);
+    // lambda = pkg_whit.init_lambda(imgcol_temp); // first band
+    lambda = pkg_whit.init_lambda(imgcol.select(0)); // first band
     // lambda = ee.Image.constant(2);
     // options.wFUN = wSELF;
-    task = 'wWH_' + year + "_" + year_end2;
+    task = 'wWH_' + year + "_" + year_end2 + '_nonylu';
     print(task);
-   
+
     // 3. whittaker main entries
-    var whit = pkg_whit.whit_imgcol(imgcol, options, lambda, ylu);
+    var whit = pkg_whit.whit_imgcol(imgcol, options, lambda);
     var mat_zs = whit.zs; // curve fitting matrix, 2d ee.ImageArray
     var mat_ws = whit.ws; // weights matrix
-    
+
     // array to multiple band image
     mat_zs = mat_zs.arraySlice(0, I_beg, I_end); // small range
     // 1: column axis; -1: last column
@@ -214,20 +224,20 @@ function whit_batch(imgcol_full, year, dt){
 
     /** export global data */
     // 4.2 export global data
-    if (isExportGlobal){
+    if (isExportGlobal)
         pkg_export.ExportImg(img_out, task, options_export);
-    }
-    
+
     return {
-      imgcol: imgcol,
-      lambda: lambda,
-      smooth: whit
+        imgcol: imgcol,
+        lambda: lambda,
+        smooth: whit
     }; // without removing head and tail adding
 }
 
 
 /** Initialize weights ------------------------------------------------------ */
 function qc_LAI(img) {
+    // img = img.unmask(-1.0); // crucial, also for weight (w)
     var FparLai_QC = img.select('FparLai_QC');
     var FparExtra_QC = img.select('FparExtra_QC');
 
@@ -243,15 +253,17 @@ function qc_LAI(img) {
      * snow, cloud, shadow | 0
      * aerosol, cirrus     | 0.5
      */
-    var w = img.select(0).mask(); //unknow why can use ee.Image(1)
-    var q_0 = qc_snow.or(qc_cloud).or(qc_shadow);
-    var q_1 = qc_aerosol.or(qc_cirrus);
+    var w = img.select(0).mask().rename('w'); //unknow why can use ee.Image(1)
+    var q_bad = qc_snow.or(qc_cloud).or(qc_shadow);
+    var q_margin = qc_aerosol.or(qc_cirrus);
 
-    w = w.where(q_1, 0.5).where(q_0, 0.05);
+    w = w.where(q_margin, 0.5).where(q_bad, 0.05);
     // var img2    = img.select('Lai').updateMask(qc_mask).divide(5);
     return ee.Image(img.select('Lai')).divide(10)
-        .addBands([w, qc_scf, qc_snow, qc_aerosol, qc_cirrus, qc_cloud, qc_shadow])
-        .rename(['Lai', 'w', 'qc_scf', 'qc_snow', 'qc_aerosol', 'qc_cirrus', 'qc_cloud', 'qc_shadow'])
+        .unmask(-1.0) // crucial
+        .addBands([w])
+        // .addBands([w, qc_scf, qc_snow, qc_aerosol, qc_cirrus, qc_cloud, qc_shadow])
+        // .rename(['Lai', 'w', 'qc_scf', 'qc_snow', 'qc_aerosol', 'qc_cirrus', 'qc_cloud', 'qc_shadow'])
         .copyProperties(img, img.propertyNames());
 }
 
@@ -263,33 +275,33 @@ function qc_LAI(img) {
  * @param  {double} [wmin] [description]
  * @return {ee.Image}           [ymin, ymax]
  */
-function get_ylu(imgcol, wmin, band_VI){
-    wmin    = wmin    || 0.2;  
+function get_ylu(imgcol, wmin, band_VI) {
+    wmin = wmin || 0.2;
     band_VI = band_VI || 0;
 
-    var n    = imgcol.size();
+    var n = imgcol.size();
     var perc_margin = imgcol.select(["w"])
-        .map(function(img) { return img.gte(0.5); })
+        .map(function (img) { return img.gte(0.5); })
         .sum().divide(imgcol.size());
     var perc_good = imgcol.select(["w"])
-        .map(function(img) { return img.gte(1); })
+        .map(function (img) { return img.gte(1); })
         .sum().divide(imgcol.size());
     // var perc = imgcol.select(['good', 'margin']).count().divide(n).unmask(0); // percentage
-    
+
     // weights less than `w_critical`, will be masked
     var w_critical = ee.Image(wmin);
     w_critical = w_critical.where(perc_margin.gte(0.4), 0.5);
     w_critical = w_critical.where(perc_good.gte(0.4), 1);
-    
+
     // Map.addLayer(w_critical, {}, 'w_critical');
-    var imgcol_perc = imgcol.map(function(img){
+    var imgcol_perc = imgcol.map(function (img) {
         var mask = img.select('w').gte(w_critical);
         return img.updateMask(mask);
     }).select(band_VI);
-    
+
     // 1% percentile
-    var ymax = imgcol_perc.max(), 
-        ymin = imgcol_perc.reduce( ee.Reducer.percentile([1]) ); //0.5
-    
+    var ymax = imgcol_perc.max(),
+        ymin = imgcol_perc.reduce(ee.Reducer.percentile([1])); //0.5
+
     return ymin.addBands(ymax).rename(['min', 'max']);
 }
