@@ -47,7 +47,7 @@ var pkg_mov    = require('users/kongdd/public:Math/pkg_movmean.js'); //movmean
 var pkg_join   = require('users/kongdd/public:pkg_join.js');
 var pkg_main   = require('users/kongdd/public:pkg_main.js');
 var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');
-var pkg_export = require('users/kongdd/public:pkg_export2.js');
+var pkg_export = require('users/kongdd/public:pkg_export.js');
 // var points     = require('users/kongdd/public:data/flux_points.js').points;
 
 var prj = pkg_export.getProj(imgcol_land);
@@ -627,9 +627,8 @@ function PML(year, is_PMLV2) {
      */
     function PML_period(INPUTS){
         var len = INPUTS.size();
-        print(len)
-        print(INPUTS)
-        
+        // print(len)
+        // print(INPUTS)
         /** 2. ImgsRaw: ['Eeq', 'Evp', 'Es_eq', 'Eca', 'Ecr', 'Ei', 'Pi'] */
         var PML_ImgsRaw = INPUTS.map(PML_daily).sort("system:time_start");
 
@@ -696,7 +695,7 @@ var exec = true;
 var options = {
     range        : [-180, -60, 180, 89],
     cellsize     : 1 / 240, //1/240,
-    type         : 'asset',
+    type         : 'drive', // or 'drive', asset
     crs          : 'SR-ORG:6974', //projects/pml_evapotranspiration
     crsTransform : prj.crsTransform
 };
@@ -758,15 +757,15 @@ if (exec) {
     
     var years = ee.List.sequence(2003, 2012);
     
-    var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
-    var vis_et  = {min: 100, max: 1600 , palette:pkg_vis.colors.RdYlBu[11]},
-        vis_gpp = {min: 100, max: 3500 , palette:pkg_vis.colors.RdYlGn[11]};
-    var vis_slp = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"]};
+    // var pkg_vis   = require('users/kongdd/public:pkg_vis.js');
+    // var vis_et  = {min: 100, max: 1600 , palette:pkg_vis.colors.RdYlBu[11]},
+    //     vis_gpp = {min: 100, max: 3500 , palette:pkg_vis.colors.RdYlGn[11]};
+    // var vis_slp = {min:-20, max:20, palette:["ff0d01","fafff5","2aff03"]};
     
-    var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP', false); 
-    var lg_slp  = pkg_vis.grad_legend(vis_slp, 'Trend (gC m-2 y-2)', false); //gC m-2 y-2, kPa y-1
+    // var lg_gpp  = pkg_vis.grad_legend(vis_gpp, 'GPP', false); 
+    // var lg_slp  = pkg_vis.grad_legend(vis_slp, 'Trend (gC m-2 y-2)', false); //gC m-2 y-2, kPa y-1
 
-    pkg_vis.add_lgds([lg_gpp, lg_slp]);
+    // pkg_vis.add_lgds([lg_gpp, lg_slp]);
 
     if (debug) {
         var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');

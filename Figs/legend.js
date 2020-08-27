@@ -7,7 +7,6 @@ var pkg_vis = require('users/kongdd/public:pkg_vis.js');
  */
 
 // visualization parameters
-var vis_et      = {min: 100, max: 1600, palette:pkg_vis.colors.RdYlBu[11]};
 var vis_gpp     = {min: 100, max: 3500, palette:pkg_vis.colors.RdYlGn[11]};
 
 var palette     = ['#570088', '#920057', '#CE0027', '#FF0A00', '#FF4500', '#FF8000', '#FFB100', '#FFD200', '#FFF200', '#C7EE03', '#70D209', '#18B80E', '#067F54', '#033FA9', '#0000FF'];
@@ -20,11 +19,13 @@ var vis_slp_gpp = {min: -20, max:   20, palette:["ff0d01","fafff5","2aff03"]};
 
 // legends
 var lg_gpp      = pkg_vis.grad_legend(vis_gpp, 'GPP', false); 
-var lg_et       = pkg_vis.grad_legend(vis_et , 'ET' , false); 
 var lg_wue      = pkg_vis.grad_legend(vis_wue, 'WUE', false);
 var lg_perc     = pkg_vis.grad_legend(vis_perc, 'percentage', false);
 
 var lg_slp_gpp  = pkg_vis.grad_legend(vis_slp_gpp, 'Trend (gC m-2 y-1)', false); //gC m-2 y-2, kPa y-1
+
+var vis_et = { min: 100, max: 1600, palette: pkg_vis.colors.RdYlBu[11] };
+var lg_et = pkg_vis.grad_legend(vis_et, 'ET', false); 
 var lg_slp_et   = pkg_vis.grad_legend(vis_slp_et , 'Trend (mm y-1)', false); //gC m-2 y-2, kPa y-1
 
 

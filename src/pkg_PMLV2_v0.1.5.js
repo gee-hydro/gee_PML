@@ -7,11 +7,16 @@ var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165
     imgcol_land = ee.ImageCollection("MODIS/006/MCD12Q1"),
     co2 = ee.FeatureCollection("projects/pml_evapotranspiration/PML_INPUTS/co2_mm_gl_2002-2019_8day");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
+
 var pkg_PML = {};
 // var pkg_PML = require('users/kongdd/gee_PML:src/pkg_PMLV2_v0.1.5.js');
 /**
+ * Copyright (c) 2019 Dongdong Kong. All rights reserved.
+ * This work is licensed under the terms of the MIT license.  
+ * For a copy, see <https://opensource.org/licenses/MIT>.
+ * 
  * PML_V2 (Penman-Monteith-Leuning) model 
- *
+ * 
  * @usage:
  * var pkg_PML = require('users/kongdd/gee_PML:src/pkg_PMLV2_v0.1.5.js');
  *
@@ -60,7 +65,7 @@ var pkg_mov = require('users/kongdd/public:Math/pkg_movmean.js'); //movmean
 var pkg_join = require('users/kongdd/public:pkg_join.js');
 var pkg_main = require('users/kongdd/public:pkg_main.js');
 var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
-var pkg_export = require('users/kongdd/public:pkg_export2.js');
+var pkg_export = require('users/kongdd/public:pkg_export.js');
 var pkg_vis = require('users/kongdd/public:pkg_vis.js');
 // var points     = require('users/kongdd/public:data/flux_points.js').points;
 
@@ -214,14 +219,9 @@ function aggregate_yearly(imgcol, band, scale_factor) {
     return imgcol_annual;
 }
 function yearly_anomaly(imgcol, band, scale_factor, is_yearly) {
-    if (is_yearly === undefined) {
-        is_yearly = false;
-    }
-
-    if (!is_yearly) {
-        imgcol = aggregate_yearly(imgcol);
-    }
-
+    if (is_yearly === undefined) is_yearly = false;
+    if (!is_yearly) imgcol = aggregate_yearly(imgcol);
+    
     var img_2003 = imgcol.first();
     var imgcol_diff = imgcol
         .map(function (img) { return img.subtract(img_2003).copyProperties(img, ["system:time_start"]); });
@@ -311,7 +311,6 @@ pkg_PML.fill_options = function(opt, verbose){
 };
 
 /** 2. ------------------------------------------------------------------- */
-
 /**
  * Prepare INPUT datset for PML_V2
  *
@@ -545,7 +544,7 @@ function PML(year, is_PMLV2) {
     // var year_land = ee.Algorithms.If(year.gt(year_max), year_max,
     //     ee.Algorithms.If(year.lt(year_min), year_min, year));
 
-    if (options.is_dynamic_lc) year_land = 2003; // dynamic landcover
+    if (!options.is_dynamic_lc) year_land = 2003; // dynamic landcover
     var filter_date_land = ee.Filter.calendarRange(year_land, year_land, 'year');
     var land = ee.Image(dataset.ImgCol_land.filter(filter_date_land).first()); //land_raw was MODIS/051/MCD12Q1
 
@@ -941,9 +940,9 @@ var __main__ = true;
 if (__main__) {
     // default is dynamic
     var opt = {
-        year_begin: 2003,
-        year_end  : 2009,
-        folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_dynamic", // _staticLC2003
+        year_begin: 2011,
+        year_end  : 2017,
+        folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v016_dynamic", // _staticLC2003
         // folder    : "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_static", // _staticLC2003
         timescale : "yearly", 
         is_dynamic_lc: true, 
@@ -951,12 +950,12 @@ if (__main__) {
     };
     var imgcol_new, imgcol_org;
     // dynamic
-    // imgcol_new = pkg_PML.PML_main(opt, true);
+    imgcol_new = pkg_PML.PML_main(opt, true);
     
     // static
     opt.is_dynamic_lc = false;
-    opt.folder = "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v015_static";
-    imgcol_org = pkg_PML.PML_main(opt, true);
+    opt.folder = "projects/pml_evapotranspiration/landcover_impact/PMLV2_yearly_v016_static";
+    // imgcol_org = pkg_PML.PML_main(opt, true);
     
     var is_compare = false;
     if (is_compare) {

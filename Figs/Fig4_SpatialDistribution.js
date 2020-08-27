@@ -52,6 +52,10 @@ if (V2) {
 annual = annual.select(bands);
 // print(annual);
 
+function get_ET(img) {
+    return img.expression('b("Ec") + b("Es")+ b("Ei")').rename('ET');
+}
+
 var ET     = annual.expression('b("Ec") + b("Es")+ b("Ei")').rename('ET'); //, b("ET_water")
 var per_Ei = annual.expression(' b("Ei") / ET * 100', {ET:ET}).rename('per');
 var per_Es = annual.expression(' b("Es") / ET * 100', {ET:ET}).rename('per');
