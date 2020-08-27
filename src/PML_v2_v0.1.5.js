@@ -8,6 +8,10 @@ var point = /* color: #d63000 */ee.Geometry.Point([-118.01513671875, 38.11727165
     co2 = ee.FeatureCollection("projects/pml_evapotranspiration/PML_INPUTS/co2_mm_gl_2002-2019_8day");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 /**
+ * Copyright (c) 2019 Dongdong Kong. All rights reserved.
+ * This work is licensed under the terms of the MIT license.  
+ * For a copy, see <https://opensource.org/licenses/MIT>.
+ * 
  * PML_V2 (Penman-Monteith-Leuning) model 
  *
  * @usage:
@@ -52,7 +56,7 @@ var pkg_mov = require('users/kongdd/public:Math/pkg_movmean.js'); //movmean
 var pkg_join = require('users/kongdd/public:pkg_join.js');
 var pkg_main = require('users/kongdd/public:pkg_main.js');
 var pkg_trend = require('users/kongdd/public:Math/pkg_trend.js');
-var pkg_export = require('users/kongdd/public:pkg_export2.js');
+var pkg_export = require('users/kongdd/public:pkg_export.js');
 var pkg_vis = require('users/kongdd/public:pkg_vis.js');
 // var points     = require('users/kongdd/public:data/flux_points.js').points;
 
@@ -722,7 +726,7 @@ function PML(year, is_PMLV2) {
             // print(PML_Imgs, dates);
 
             // export_image(img, '2002-07-05_v6');
-            pkg_export.ExportImgCol(PML_Imgs, dates, range, scale, type, folder, crs);
+            pkg_export.ExportImgCol(PML_Imgs, dates, options);
             // pkg_export.ExportImg(img, range, '2002-07-05_v4', scale, drive, folder, crs)
         } else {
             print('PML_Imgs', PML_Imgs);
@@ -730,6 +734,7 @@ function PML(year, is_PMLV2) {
     }
 
     var INPUTS = PML_INPUTS_d8(year);
+    print(INPUTS, 'INPUTS');
     // Map.addLayer(INPUTS, {}, 'INPUT');
 
     var PML_Imgs = PML_period(INPUTS);
@@ -795,8 +800,8 @@ if (exec) {
     // cellsize = 1/4;
     // folder   = "projects/pml_evapotranspiration/PML/bugs";
 
-    var year = 2018,
-        year_begin = 2019,
+    var year = 2003,
+        year_begin = 2003,
         year_end = year_begin + 0, //year_begin + 3,
         save = true, //global param called in PML_main
         debug = false;
@@ -898,7 +903,7 @@ if (exec) {
             img_year = imgcol_PML.select(bands.slice(0, -1)).mean().multiply(ydays)
                 .set('system:time_start', begin_date.millis())
                 .set('system:id', task);
-
+            print(imgcol_PML)
             // pkg_export.ExportImg(img_year, task, range, cellsize, type, folder_yearly, crs, crsTransform);
             // pkg_export.ExportImgCol(imgcol_PML, null, range, cellsize, type, folder, crs, crsTransform);
         }

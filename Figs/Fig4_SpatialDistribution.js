@@ -52,10 +52,19 @@ if (V2) {
 annual = annual.select(bands);
 // print(annual);
 
-var ET     = annual.expression('b("Ec") + b("Es")+ b("Ei")').rename('ET'); //, b("ET_water")
-var per_Ei = annual.expression(' b("Ei") / ET * 100', {ET:ET}).rename('per');
-var per_Es = annual.expression(' b("Es") / ET * 100', {ET:ET}).rename('per');
-var per_Ec = annual.expression(' b("Ec") / ET * 100', {ET:ET}).rename('per');
+function ET_component_perc(img) {
+    var ET = img.expression('b("Ec") + b("Es")+ b("Ei")').rename('ET');
+    img = img.addBands(ET);
+    // var ET = annual.expression('b("Ec") + b("Es")+ b("Ei")').rename('ET'); //, b("ET_water")
+    var per_Ei = img.expression(' b("Ei") / b("ET") * 100', { ET: ET }).rename('per_Ei');
+    var per_Es = img.expression(' b("Es") / b("ET") * 100', { ET: ET }).rename('per_Es');
+    var per_Ec = img.expression(' b("Ec") / b("ET") * 100', { ET: ET }).rename('per_Ec');
+    return img.addBands([per_Ec, per_Es, per_Ei]);
+}
+
+
+
+
 
 if (V2) {
     var GPP = annual.select('GPP');

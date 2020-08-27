@@ -5,7 +5,7 @@
 Penman-Monteith-Leuning model (abbreviated as `PML_V1`) was proposed by  *Leuning* *et al. (2008)*, and further improved by *Zhang et al., (2010, 2016)*. In PML, evaporation is divided into: transpiration from vegetation (Ec), direct evaporation from the soil (Es) and vaporization of intercepted rainfall from 
 vegetation (Ei).
 
-`PML_V2 ` was developed by *Gan et al., (2018)* and *Zhang et al., (2019)*, which coupled ET and gross primary products via canopy conductance theory. They are both in the resolution of 500 m and 8-day, and range from -60°S to 90°N.
+`PML_V2 ` was developed by *Gan et al., (2018)* and *Zhang et al., (2019)*, which coupled ET and gross primary production via canopy conductance theory. They are both in the resolution of 500 m and 8-day, and range from -60°S to 90°N.
 
 ![](doc/Figure1_flowchart_of_PML_V2.svg)
 
@@ -48,12 +48,43 @@ __*Note: Only PMLV1 is available currently.*__
 |ET_water | mm d-1 | 0.01 | Water body, snow and ice evaporation. Penman <br>evapotranspiration is regarded as actual evaporation for them. |
 |qc | - | - | Interpolation information for Albedo and Emissivity. <br>Bitmask for qc:<br>**Bits 0-2**: Emissivity interpolation information<br> 0: good value, no interpolation<br> 1: linear interpolation <br> 2: history 8-day average interpolation <br> 3: history monthly average interpolation<br>**Bits 3-5**: Albedo interpolation information <br> Same as Emissivity. |
 
+## Usage
+
+```JavaScript
+// available from 2000-02-26 to 2020-05-24
+// Update at 2020-09-11, Dongdong Kong
+var imgcol_8d = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day_v016");
+
+/**
+ * Copyright (c) 2019 Dongdong Kong. All rights reserved.
+ * This work is licensed under the terms of the MIT license.
+ * For a copy, see <https://opensource.org/licenses/MIT>.
+ */
+var pkg_export = require('users/kongdd/public:pkg_export.js');
+// var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');
+// export parameters
+var options = {
+    type: "drive",
+    range: [-180, -60, 180, 90], // [73, 25, 105, 40], 
+    cellsize: 1 / 10,
+    // crsTransform : [463.312716528, 0, -20015109.354, 0, -463.312716527, 10007554.677], // prj.crsTransform;
+    // scale        : 463.3127165275, // prj.scale
+    crs: 'EPSG:4326', // 'SR-ORG:6974', // EPSG:4326
+    folder: 'PMLV2'
+};
+
+imgcol_8d = imgcol_8d.select([0, 1, 2, 3, 4, 5]);
+print('latest:', imgcol_8d.filterDate('2020-01-01', '2023-01-01'));
+pkg_export.ExportImgCol(imgcol_8d.limit(3), null, options, 'PMLV2_latest');
+```
+
+
 ### 1.1 **Access data**
 
 Click the following links to get the access. The corresponding links are:
 
-* PML_V1 https://code.earthengine.google.com/?asset=projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day
-* PML_V2 https://code.earthengine.google.com/?asset=projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day_v014
+<!-- * PML_V1 https://code.earthengine.google.com/?asset=projects/pml_evapotranspiration/PML/OUTPUT/PML_V1_8day -->
+<!-- * PML_V2 https://code.earthengine.google.com/?asset=projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day_v014 -->
 
 ### 1.2 Data download
 PML products are standard `ee.ImageCollection` object in GEE.
@@ -72,15 +103,15 @@ Clip and export the regional data you need by the polygon shapefile you uploaded
 ## Updates
 
 * 2019-08-02: extend the time period to 2018
+* 2020-09-11: extend to 2020-05-24, Dongdong Kong
 
 ## Known issues
 
-*   PML_V2 data missing due to LAI images missing
-    -   2018-07-28
+*   PML_V2 data missing due to LAI images missing: fixed
 
 ## **References:**
 
-> [1].  Zhang, Y., Kong, D., Gan, R., Chiew, F.H.S., McVicar, T.R., Zhang, Q., and Yang, Y.. (2019) Coupled estimation of 500m and 8-day resolution global evapotranspiration and gross primary production in 2002-2017. Remote Sens. Environ. 222, 165-182, https://doi:10.1016/j.rse.2018.12.031 
+> [1].  Zhang, Y.\*, Kong, D.\*, Gan, R., Chiew, F.H.S., McVicar, T.R., Zhang, Q., and Yang, Y.. (2019) Coupled estimation of 500m and 8-day resolution global evapotranspiration and gross primary production in 2002-2017. Remote Sens. Environ. 222, 165-182, https://doi:10.1016/j.rse.2018.12.031 
 > 
 > [2]. Kong, D., Zhang, Y., Gu, X., & Wang, D. (2019). A robust method for reconstructing global MODIS EVI time series on the Google Earth Engine. ISPRS Journal of Photogrammetry and Remote Sensing*, *155*(May), 13–24. https://doi.org/10.1016/j.isprsjprs.2019.06.014
 > 
