@@ -5,7 +5,7 @@
 Penman-Monteith-Leuning model (abbreviated as `PML_V1`) was proposed by  *Leuning* *et al. (2008)*, and further improved by *Zhang et al., (2010, 2016)*. In PML, evaporation is divided into: transpiration from vegetation (Ec), direct evaporation from the soil (Es) and vaporization of intercepted rainfall from 
 vegetation (Ei).
 
-`PML_V2 ` was developed by *Gan et al., (2018)* and *Zhang et al., (2019)*, which coupled ET and gross primary products via canopy conductance theory. They are both in the resolution of 500 m and 8-day, and range from -60°S to 90°N.
+`PML_V2 ` was developed by *Gan et al., (2018)* and *Zhang et al., (2019)*, which coupled ET and gross primary production via canopy conductance theory. They are both in the resolution of 500 m and 8-day, and range from -60°S to 90°N.
 
 ![](doc/Figure1_flowchart_of_PML_V2.svg)
 
