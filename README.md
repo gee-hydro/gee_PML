@@ -5,7 +5,7 @@
 Penman-Monteith-Leuning model (abbreviated as `PML_V1`) was proposed by  *Leuning* *et al. (2008)*, and further improved by *Zhang et al., (2010, 2016)*. In PML, evaporation is divided into: transpiration from vegetation (Ec), direct evaporation from the soil (Es) and vaporization of intercepted rainfall from 
 vegetation (Ei).
 
-`PML_V2 ` was developed by *Gan et al., (2018)* and *Zhang et al., (2019)*, which coupled ET and gross primary products via canopy conductance theory. They are both in the resolution of 500 m and 8-day, and range from -60°S to 90°N.
+`PML_V2 ` was developed by *Gan et al., (2018)* and *Zhang et al., (2019)*, which coupled ET and gross primary production via canopy conductance theory. They are both in the resolution of 500 m and 8-day, and range from -60°S to 90°N.
 
 ![](doc/Figure1_flowchart_of_PML_V2.svg)
 
@@ -80,7 +80,7 @@ Clip and export the regional data you need by the polygon shapefile you uploaded
 
 ## **References:**
 
-> [1].  Zhang, Y., Kong, D., Gan, R., Chiew, F.H.S., McVicar, T.R., Zhang, Q., and Yang, Y.. (2019) Coupled estimation of 500m and 8-day resolution global evapotranspiration and gross primary production in 2002-2017. Remote Sens. Environ. 222, 165-182, https://doi:10.1016/j.rse.2018.12.031 
+> [1].  Zhang, Y.\*, Kong, D.\*, Gan, R., Chiew, F.H.S., McVicar, T.R., Zhang, Q., and Yang, Y.. (2019) Coupled estimation of 500m and 8-day resolution global evapotranspiration and gross primary production in 2002-2017. Remote Sens. Environ. 222, 165-182, https://doi:10.1016/j.rse.2018.12.031 
 > 
 > [2]. Kong, D., Zhang, Y., Gu, X., & Wang, D. (2019). A robust method for reconstructing global MODIS EVI time series on the Google Earth Engine. ISPRS Journal of Photogrammetry and Remote Sensing*, *155*(May), 13–24. https://doi.org/10.1016/j.isprsjprs.2019.06.014
 > 
