@@ -79,7 +79,7 @@ function calYearlyTrend(imgcol, band){
     return img_trend.addBands(img_mean);
 }
 
-function calETSum(img){
+function add_ETSum(img){
     var ET = img.expression('b("Ec") + b("Ei") + b("Es")').rename('ET');
     // img = img.addBands(ET);
     // var wue = img.expression('b("GPP")/b("ET")').rename('WUE');
