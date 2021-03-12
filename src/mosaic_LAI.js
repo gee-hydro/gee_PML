@@ -1,15 +1,24 @@
 /**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var imgcol_LAI_2018 = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit2018"),
-    imgcol_lai_4d = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit_4d");
+var imgcol_lai_4d = ee.ImageCollection("projects/pml_evapotranspiration/PML_INPUTS/MODIS/LAI_whit_4d");
 /***** End of imports. If edited, may not auto-convert in the playground. *****/
 // var imgcol_lai = require('users/kongdd/gee_PML:src/mosaic_LAI.js').smoothed;
 
 var pkg_main = require('users/kongdd/public:pkg_main.js');
-
-/**
- * LAI smoothing ending at 2017
+/** 
+ * Copyright (c) 2019 Dongdong Kong. All rights reserved.
+ * This work is licensed under the terms of the MIT license.  
+ * For a copy, see <https://opensource.org/licenses/MIT>.
+ * 
+ * LAI SMOOTHING
  */
- 
+var imgcol_LAI = ee.ImageCollection( imgcol_lai_4d.toList(6).map(function(img){
+        return pkg_main.bands2imgcol(img, 'LAI').toList(1000);
+    }).flatten());
+
+exports = {
+    smoothed: imgcol_LAI
+};
+
 // MOSAIC smoothed LAI images
 // print(imgcol_lai_4d);
 
@@ -29,9 +38,7 @@ var pkg_main = require('users/kongdd/public:pkg_main.js');
 //     imgcol_2018[i] = pkg_main.bandsToImgCol(img, bandname_sm);
 // }
 // print(imgcol_lai_4d);
-var imgcol_LAI = ee.ImageCollection( imgcol_lai_4d.toList(6).map(function(img){
-        return pkg_main.bandsToImgCol(img, 'LAI').toList(1000);
-    }).flatten());
+
 // print(imgcol_LAI);
 // .map(function(img){ return img.multiply(0.1).copyProperties(img, img.propertyNames());}); 
         
@@ -58,8 +65,4 @@ var imgcol_LAI = ee.ImageCollection( imgcol_lai_4d.toList(6).map(function(img){
 // }
 
 // Map.addLayer(imgcol_2018);
-
-exports = {
-    smoothed: imgcol_LAI
-};
 // Map.addLayer(exports.smoothed);
