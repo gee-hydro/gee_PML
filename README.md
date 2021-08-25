@@ -1,5 +1,11 @@
 # Penman-Monteith-Leuning Evapotranspiration In Google Earth Engine
 
+
+## Known issues
+
+*   PML_V2 data missing due to LAI images missing: fixed
+*   `ET_water` resample is incorrect in the product of PML_V2 0.1 deg (25 Aug, 2021)
+
 ## Modeling framework
 
 Penman-Monteith-Leuning model (abbreviated as `PML_V1`) was proposed by  *Leuning* *et al. (2008)*, and further improved by *Zhang et al., (2010, 2016)*. In PML, evaporation is divided into: transpiration from vegetation (Ec), direct evaporation from the soil (Es) and vaporization of intercepted rainfall from 
@@ -104,10 +110,6 @@ Clip and export the regional data you need by the polygon shapefile you uploaded
 
 * 2019-08-02: extend the time period to 2018
 * 2020-09-11: extend to 2020-05-24, Dongdong Kong
-
-## Known issues
-
-*   PML_V2 data missing due to LAI images missing: fixed
 
 ## **References:**
 
