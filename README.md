@@ -66,7 +66,7 @@ var imgcol_8d = ee.ImageCollection("projects/pml_evapotranspiration/PML/OUTPUT/P
  * This work is licensed under the terms of the MIT license.
  * For a copy, see <https://opensource.org/licenses/MIT>.
  */
-var pkg_export = require('users/kongdd/public:pkg_export.js');
+var pkg_export = require('users/kongdd/pkgs:pkg_export.js');
 // var pkg_trend  = require('users/kongdd/public:Math/pkg_trend.js');
 // export parameters
 var options = {
