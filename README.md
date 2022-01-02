@@ -81,7 +81,7 @@ var options = {
 
 imgcol_8d = imgcol_8d.select([0, 1, 2, 3, 4, 5]);
 print('latest:', imgcol_8d.filterDate('2020-01-01', '2023-01-01'));
-pkg_export.ExportImgCol(imgcol_8d.limit(3), null, options, 'PMLV2_latest');
+pkg_export.ExportImgCol(imgcol_8d.limit(3), 'PMLV2_latest', options);
 ```
 
 
