@@ -1,5 +1,6 @@
 # Penman-Monteith-Leuning Evapotranspiration In Google Earth Engine
 
+> 核心依赖项转为闭源，如有合作需求，请私信。
 
 ## Known issues
 
