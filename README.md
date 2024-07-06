@@ -1,6 +1,9 @@
 # Penman-Monteith-Leuning Evapotranspiration In Google Earth Engine
 
-> 仅开源模型核心代码部分，其余部分转为闭源，如果合作需求，请私信。
+## PMLV2 v017_arc
+The latest product (2000-2023) is available at: 
+- 0.05°：https://zenodo.org/records/10647618
+- 500m：https://code.earthengine.google.com/?asset=projects/pml_evapotranspiration/PML/OUTPUT/PML_V2_8day_v017_ARC_061
 
 ## Known issues
 
